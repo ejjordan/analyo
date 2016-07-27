@@ -4,6 +4,7 @@
 execfile('./omni/base/header.py')
 from plotter import *
 from base.store import plotload
+from common_plot import *
 import matplotlib.gridspec as gridspec
 import numpy as np
 import matplotlib.patches as mpatches
@@ -20,35 +21,13 @@ color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
 #---load the upstream data
 data,calc = plotload(plotname,work)
 sasa_type='abs_sasa'
-label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
 
-
-def get_subdomains(protein,domainfile):
-    with open(domainfile,'r') as fp: domain_lines=fp.readlines(); fp.close()
-    for line in domain_lines:
-        line.strip('\n')
-        dom_info=line.split(' ')
-        if dom_info[0].upper()==protein.upper():
-            domains={'kd_start':int(dom_info[1]), 'kd_end':int(dom_info[2]),
-                     'kd':range(int(dom_info[1]), int(dom_info[2])),
-                     'ploop_start':int(dom_info[3]), 'ploop_end':int(dom_info[4]),
-                     'ploop':range(int(dom_info[3]), int(dom_info[4])),
-                     'alphac_start':int(dom_info[5]), 'alphac_end':int(dom_info[6]),
-                     'alphac':range(int(dom_info[5]), int(dom_info[6])),
-                     'catloop_start':int(dom_info[7]), 'catloop_end':int(dom_info[8]),
-                     'cloop':range(int(dom_info[7]), int(dom_info[8])),
-                     'activation_start':int(dom_info[9]), 'activation_end':int(dom_info[10]),
-                     'aloop':range(int(dom_info[9]), int(dom_info[10]))}
-            return domains
-    return
-domainfile='./calcs/kinase_subdomains'
 protein=work.c
-domains=get_subdomains(protein,domainfile)
+domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
 hydrophobic=['PHE','TYR','ILE','LEU','VAL','TRP']
 polar=['ARG','LYS','GLU','ASP','HIS','SER','THR','ASN','GLN']
-hydrophobic_core = [773, 774, 777, 782, 835, 836, 841, 864]
 
 def unpack_sasas(SASA_keys,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_list=None):
     SASAs={}
@@ -238,5 +217,5 @@ def error_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_
     else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
 
-error_SASA(data,sasa_type,base_restype=None,comp_restype=None,res_list=hydrophobic_core,combine=2,plot=False)
+error_SASA(data,sasa_type,base_restype=None,comp_restype=None,res_list=hydrophobic_core,combine=2,plot=True)
 

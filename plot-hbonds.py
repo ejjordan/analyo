@@ -5,13 +5,13 @@
 execfile('./omni/base/header.py')
 from plotter import *
 from base.store import plotload
+from common_plot import *
 import matplotlib.gridspec as gridspec
 import numpy as np
 import matplotlib.patches as mpatches
 
 #---settings
 plotname = 'hbonds'
-rmsd_bin_step = 0.1
 
 #---colors
 import matplotlib.patheffects as path_effects
@@ -20,11 +20,6 @@ color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
 
 #---load the upstream data
 data,calc = plotload(plotname,work)
-hydrophobic=['PHE','TYR','ILE','LEU','VAL','TRP']
-polar=['ARG','LYS','GLU','ASP','HIS','SER','THR','ASN','GLN']
-charged=['ARG','LYS','GLU','ASP','HIS']
-hydrophobic_core=[1096,1098,1170,1171,1174,1179,1239,1245,1271,1240]
-label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
 
 def read_hbonds(my_data,hbond_keys,timesteps=False,donor_restype=None,acceptor_restype=None,
                            donor_reslist=None,acceptor_reslist=None,divy=False):
@@ -215,122 +210,6 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, 
                     version=True,meta=meta,dpi=200)
 
 
-"""
-def each_SASA(data,sasa_type=sasa_type,base_restype=polar,comp_restype=hydrophobic,res_list=None):
-    sort_keys=sorted(data.keys())
-    sasas=unpack_sasas(sort_keys,sasa_type=sasa_type,base_restype=comp_restype,
-                       comp_restype=comp_res_type,res_list=res_list)
-    num_sims=len(sort_keys)
-    base_size = 20.
-    wide_factor = 1.5
-    color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
-    ncols = int(np.ceil(np.sqrt(num_sims)))
-    nrows = int(np.ceil(float(num_sims)/ncols))
-    fig = plt.figure(figsize=(base_size,base_size*(float(nrows)/ncols)/wide_factor))
-    gs = gridspec.GridSpec(nrows,ncols,hspace=0.65,wspace=0.8)
-    axes = [plt.subplot(gs[plot_num/ncols,plot_num%ncols]) for plot_num in range(num_sims)]
-    for plot_num,ax in enumerate(axes):
-        SASA=sasas[sort_keys[plot_num]]
-        name=SASA['name'];activity=SASA['active'];SASA_sums=SASA['sums']
-        ts = np.array(range(len(SASA_sums)))
-        ax.plot(ts,SASA_sums,color=color_dict[activity])
-        ax.set_title(name)
-        ax.tick_params(axis='y',which='both',left='off',right='off',labelleft='on')
-        ax.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='on')
-    max_SASA=sasas['max_sasa']
-    min_SASA=sasas['min_sasa']
-    for plot_num,ax in enumerate(axes):
-        ax.set_ylim(min_SASA,max_SASA)
-    plt.show()
-
-
-def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_list=None):
-    #---prepare an axis
-    axes,fig = panelplot(
-        layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-	figsize=(12,8))
-
-    color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
-    sort_keys=sorted(data.keys())
-    sasas=unpack_sasas(sort_keys,sasa_type=sasa_type,base_restype=base_restype,
-                       comp_restype=comp_restype,res_list=res_list)
-
-    #---PLOT
-    counter,xpos,xlim_left = 0,[],0
-    max_SASA=sasas['max_sasa']
-    min_SASA=sasas['min_sasa']
-    SASA_bins = np.arange(min_SASA,max_SASA,(max_SASA-min_SASA)/100)
-    for snum,sn in enumerate(sort_keys):
-	#---unpack
-        SASAs=sasas[sn]['sums'];name=sasas[sn]['name'];activity=sasas[sn]['active']
-	color = color_dict[activity]
-	ts = np.array(range(len(SASAs)))
-	ts -= ts.min()
-	#---histograms
-	ax = axes[0]
-	counts,bins = np.histogram(SASAs,bins=SASA_bins,normed=True)
-	ax.fill_betweenx((bins[1:]+bins[:-1])/2.,counter,counter+counts,alpha=1.0,
-                         color=color,lw=0)
-	max_SASA = max([max_SASA,max(SASAs)])
-	#---compute drift
-	m,b = np.polyfit(ts[len(SASAs)/10:],SASAs[len(SASAs)/10:],1)
-	drift = m*(ts[-1]-ts[len(SASAs)/10])
-	drift_start = ts[len(SASAs)/10]*m+b
-	#---drift arrows
-	ax.arrow(counter,drift_start,0,drift,
-                 head_width=max(counts)*0.1,head_length=max_SASA*0.05,fc=color,ec='w',lw=1.5,
-                 path_effects=[path_effects.Stroke(linewidth=4,foreground=color),
-                               path_effects.Normal()],zorder=3)
-	xpos.append(counter)
-	counter += max(counts)*1.1
-	if snum == 0: xlim_left = -1*max(counts)*0.1
-    ax.set_xticks(xpos)
-    ax.set_xticklabels([sasas[sn]['name'] for sn in sort_keys],rotation=45,ha='right')
-    ax.set_xlim(xlim_left,counter)
-    for ax in axes: 
-	ax.set_ylabel(r'relative SASA (A.U.)')
-    fig.show()
-    #picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
-
-
-def error_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_list=None,
-               combine=False,plot=True):
-    #---prepare an axis
-    axes,fig = panelplot(
-        layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-	figsize=(12,8))
-
-    color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
-    sort_keys=sorted(data.keys())
-    sasas=unpack_sasas(sort_keys,sasa_type=sasa_type,base_restype=base_restype,
-                       comp_restype=comp_restype,res_list=res_list)
-    if combine: 
-        sasas,sort_keys=combine_SASAs(sasas,sort_keys,num_replicates=combine)
-        if not sasas: return
-    #---PLOT
-    counter,xpos,xlim_left = 0,[],0
-    max_SASA=sasas['max_sasa']
-    min_SASA=sasas['min_sasa']
-    for snum,sn in enumerate(sort_keys):
-	#---unpack
-        mean=sasas[sn]['mean'];std=sasas[sn]['std']
-        name=sasas[sn]['name'];activity=sasas[sn]['active']
-	color = color_dict[activity]
-	#---boxes
-	ax = axes[0]
-        ax.errorbar(x=counter,y=mean,yerr=std,color=color,elinewidth=4,capthick=3,
-                    capsize=6,fmt='ko')
-	xpos.append(counter)
-        counter+=1
-    ax.set_xticks(xpos)
-    ax.set_xticklabels([sasas[sn]['name'] for sn in sort_keys],rotation=45,ha='right')
-    ax.set_xlim(xlim_left-1,counter)
-    for ax in axes: 
-	ax.set_ylabel(r'relative SASA (A.U.)')
-    if plot:
-        fig.show()
-    else: picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
-"""
 
 def confusion(data):
     names=[name for name in data if data[name]['active'] not in ['wt','maybe']]
@@ -389,40 +268,11 @@ def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=No
     best_threshold=min([i[0] for i in params if i[1]==best_rate])
     return best_threshold
 
-def get_subdomains(protein,domainfile):
-    with open(domainfile,'r') as fp: domain_lines=fp.readlines(); fp.close()
-    for line in domain_lines:
-        line.strip('\n')
-        dom_info=line.split(' ')
-        if dom_info[0].upper()==protein.upper():
-            domains={'kd_start':int(dom_info[1]), 'kd_end':int(dom_info[2]),
-                     'kinase domain':range(int(dom_info[1]), int(dom_info[2])),
-                     'ploop_start':int(dom_info[3]), 'ploop_end':int(dom_info[4]),
-                     'nucleotide binding loop':range(int(dom_info[3]), int(dom_info[4])),
-                     'alphac_start':int(dom_info[5]), 'alphac_end':int(dom_info[6]),
-                     u"$\\alpha$C helix":range(int(dom_info[5]), int(dom_info[6])),
-                     'catloop_start':int(dom_info[7]), 'catloop_end':int(dom_info[8]),
-                     'catalytic loop':range(int(dom_info[7]), int(dom_info[8])),
-                     'activation_start':int(dom_info[9]), 'activation_end':int(dom_info[10]),
-                     'activation loop':range(int(dom_info[9]), int(dom_info[10]))}
-    domains[u"$\\alpha$C helix, activation loop"]=list(set(set(domains['activation loop'])|set(domains[u"$\\alpha$C helix"])))
-    domains[u"$\\alpha$C helix, nucleotide binding loop"]=list(set(set(domains['nucleotide binding loop'])|set(domains[u"$\\alpha$C helix"])))
-    domains[u"$\\alpha$C helix, catalytic loop"]=list(set(set(domains['catalytic loop'])|set(domains[u"$\\alpha$C helix"])))
-    domains['nucleotide binding loop, activation loop']=list(set(set(domains['activation loop'])|set(domains['nucleotide binding loop'])))
-    domains['nucleotide binding loop, catalytic loop']=list(set(set(domains['nucleotide binding loop'])|set(domains['catalytic loop'])))
-    domains['activation loop, catalytic loop']=list(set(set(domains['catalytic loop'])|set(domains['activation loop'])))
-    domains[u"$\\alpha$C helix, catalytic loop, activation loop"]=list(set(set(domains['activation loop'])|set(domains[u"$\\alpha$C helix"])|set(domains['catalytic loop'])))
-    domains[u"$\\alpha$C helix, catalytic loop, nucleotide binding loop"]=list(set(set(domains['nucleotide binding loop'])|set(domains[u"$\\alpha$C helix"])|set(domains['catalytic loop'])))
-    domains[u"$\\alpha$C helix, nucleotide binding loop, activation loop"]=list(set(set(domains['activation loop'])|set(domains[u"$\\alpha$C helix"])|set(domains['nucleotide binding loop'])))
-    domains[u"nucleotide binding loop, $\\alpha$C helix, catalytic loop, activation loop"]=list(set(set(domains['activation loop'])|set(domains[u"$\\alpha$C helix"])|set(domains['catalytic loop'])|set(domains['nucleotide binding loop'])))
-    domains[u"kinase domain - ($\\alpha$C helix, activation loop)"]=list(set(domains['kinase domain']) - set(domains[u"$\\alpha$C helix, activation loop"]))
-    return domains
 
 
 #finalize the data and call the plotter
-domainfile='./calcs/kinase_subdomains'
 protein=work.c
-domains=get_subdomains(protein,domainfile)
+domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
 
@@ -441,5 +291,5 @@ for key,val in domains.items():
     dhbo=read_hbonds(my_data,sort_keys,divy=True,timesteps=False,donor_reslist=val,acceptor_reslist=val)
     combos=combine_hbonds(dhbo,sort_keys,divy=True)
     deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=best_thresh)
-    histofusion(deltas,keys,title=u'Threshold = {0:1.3f}{1} Investigating: {2}'.format(best_thresh,'\n',key),plot=False,meta={key:val,'threshold':best_thresh})
+    histofusion(deltas,keys,title=u'Threshold = {0:1.3f}{1} Investigating: {2}'.format(best_thresh,'\n',key),plot=True,meta={key:val,'threshold':best_thresh})
 
