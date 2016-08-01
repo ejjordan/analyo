@@ -16,7 +16,6 @@ plotname = 'hbonds'
 #---colors
 import matplotlib.patheffects as path_effects
 colormap = lambda i,n,name='jet': mpl.cm.__dict__[name](float(i)/n)
-color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
 
 #---load the upstream data
 data,calc = plotload(plotname,work)
