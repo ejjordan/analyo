@@ -21,30 +21,61 @@ def sasa(grofile,trajfile,**kwargs):
 	
 	#---compute SASA
 	dssp_in = get_sasa(grofile,trajfile)
-	resids = array(sorted(dssp_in.keys()))
-        resnames = array([dssp_in[k]['resname'] for k in resids])
-        dssp = array([dssp_in[k]['dssp'] for k in resids])
-	rel_sasa = array([dssp_in[k]['rel_sasa'] for k in resids])
-	abs_sasa = array([dssp_in[k]['abs_sasa'] for k in resids])
-	phi = array([dssp_in[k]['phi'] for k in resids])
-	psi = array([dssp_in[k]['psi'] for k in resids])
 
 	#---pack
 	attrs,results = {},{}
-	results['dssp'] = dssp
-	results['rel_sasa'] = rel_sasa
-	results['abs_sasa'] = abs_sasa
-	results['phi'] = phi
-	results['psi'] = psi
-	results['resid'] = resids
-	results['resname'] = resnames
+
+        for chain in dssp_in.keys():
+                resids = array(sorted(dssp_in[chain].keys()))
+                chain_ids = array([chain]*len(dssp_in[chain].keys()))
+                resnames = array([dssp_in[chain][k]['resname'] for k in resids])
+                dssp = array([dssp_in[chain][k]['dssp'] for k in resids])
+                rel_sasa = array([dssp_in[chain][k]['rel_sasa'] for k in resids])
+                abs_sasa = array([dssp_in[chain][k]['abs_sasa'] for k in resids])
+                phi = array([dssp_in[chain][k]['phi'] for k in resids])
+                psi = array([dssp_in[chain][k]['psi'] for k in resids])
+
+                if 'resid' in results.keys() and 'dssp' in results.keys():
+                        results['dssp'] = append(results['dssp'],dssp,axis=0)
+                        results['rel_sasa'] = append(results['rel_sasa'],rel_sasa,axis=0)
+                        results['abs_sasa'] = append(results['abs_sasa'],abs_sasa,axis=0)
+                        results['phi'] = append(results['phi'],phi,axis=0)
+                        results['psi'] = append(results['psi'],psi,axis=0)
+                        results['resid'] = append(results['resid'],resids,axis=0)
+                        results['chain_id'] = append(results['chain_id'],chain_ids,axis=0)
+                        results['resname'] = append(results['resname'],resnames,axis=0)
+                else:
+                        results['dssp'] = dssp
+                        results['rel_sasa'] = rel_sasa
+                        results['abs_sasa'] = abs_sasa
+                        results['phi'] = phi
+                        results['psi'] = psi
+                        results['resid'] = resids
+                        results['chain_id'] = chain_ids
+                        results['resname'] = resnames
 	return results,attrs	
 
 def get_sasa(topology, trajectory, dssp_loc=master_dssp_location,skip=None):
+
+        """
+        This function currently only works with one or two chains, because I am lazy.
+        """
+
         dssp_loc = dssp_loc
-        DSSP={}
+        DSSP={'A':{}}
         universe = MDAnalysis.Universe(topology, trajectory)
         protein=universe.select_atoms("protein")
+        diff_res=[]
+        for i in range(len(protein.resnums)):
+                if protein.resnums[i]-protein.resnums[i-1]<0 and i!=0:
+                        diff_res.append(i)
+        protein.set_segids('A')
+        if len(diff_res)>=1:
+                chain_sep=diff_res.pop(0)
+                chain_end=len(protein.resnums)
+                bchain=protein[chain_sep:chain_end]
+                bchain.set_segids('B')
+                DSSP['B']={}
         for ts in universe.trajectory:
                 if skip:
                         universe.trajectory.skip=skip
@@ -61,21 +92,20 @@ def get_sasa(topology, trajectory, dssp_loc=master_dssp_location,skip=None):
                         resobj=dssp[key][0]
                         resname=dssp[key][0].resname
                         residx=resobj.id[1]
-                        #secondary_structure=dssp[key][1]
-                        #sasa=dssp[key][2]
+                        chain=key[0]
                         secondary_structure=resobj.xtra['SS_DSSP']
                         rel_sasa=resobj.xtra['EXP_DSSP_RASA']
                         abs_sasa=resobj.xtra['EXP_DSSP_ASA']
                         phi=resobj.xtra['PHI_DSSP']
                         psi=resobj.xtra['PSI_DSSP']
-                        if residx in DSSP and DSSP[residx]['resname']==resname:
-                                DSSP[residx]['dssp'].append(secondary_structure)
-                                DSSP[residx]['rel_sasa'].append(rel_sasa)
-                                DSSP[residx]['abs_sasa'].append(abs_sasa)
-                                DSSP[residx]['phi'].append(phi)
-                                DSSP[residx]['psi'].append(psi)
+                        if residx in DSSP[chain] and DSSP[chain][residx]['resname']==resname:
+                                DSSP[chain][residx]['dssp'].append(secondary_structure)
+                                DSSP[chain][residx]['rel_sasa'].append(rel_sasa)
+                                DSSP[chain][residx]['abs_sasa'].append(abs_sasa)
+                                DSSP[chain][residx]['phi'].append(phi)
+                                DSSP[chain][residx]['psi'].append(psi)
                         else:
-                                DSSP[residx]={'dssp':[secondary_structure],'phi':[phi],
-                                              'psi':[psi],'rel_sasa':[rel_sasa],
+                                DSSP[chain][residx]={'dssp':[secondary_structure],'phi':[phi],
+                                              'psi':[psi],'rel_sasa':[rel_sasa],'chain':chain,
                                               'abs_sasa':[abs_sasa],'resname':resname}
         return DSSP
