@@ -409,7 +409,7 @@ my_data=data
 hbts=read_hbonds(my_data,sort_keys,timesteps=False,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
 #hbts={'active_wt_replicate':hbts['active_wt_replicate']}
 #sort_keys=['active_wt_replicate']
-best_thresh=0.8
+best_thresh=0.5
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 #chunks=chunk_hbonds(hbts,sort_keys)
 #del(hbts)
@@ -417,8 +417,10 @@ combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
 #thresh_plotter(tstats,stats=True)
-deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=best_thresh)
-histofusion(deltas,keys,title=u'Threshold = {0:1.3f}{1} Investigating: {2}'.format(best_thresh,'\n','all'),plot=True)
+
+def thresh_plt(thresh=0.5):
+    deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=thresh)
+    histofusion(deltas,keys,title=u'Threshold = {0:1.3f}{1} Investigating: {2}'.format(best_thresh,'\n','all'),plot=True)
 
 def plot_num_bond_scaling(num_bond_scaling=101,bonds=combos,plot=True,xlog=True):
     num_bonds=[]
