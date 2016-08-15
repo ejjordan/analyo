@@ -420,7 +420,7 @@ combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 
 def thresh_plt(thresh=0.5):
     deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=thresh)
-    histofusion(deltas,keys,title=u'Threshold = {0:1.3f}{1}'.format(thresh),plot=True)
+    histofusion(deltas,keys,title=u'Threshold = {0:1.3f}'.format(thresh),plot=True)
 
 def plot_num_bond_scaling(num_bond_scaling=101,bonds=combos,plot=True,xlog=True):
     num_bonds=[]
