@@ -80,9 +80,7 @@ def combine_replicates(unpacked_SASAs):
         print "[warning] not all SASA replicates have same number of replicates"
     for name in unique_keys.keys():
         for key,val in unpacked_SASAs.items():
-            print name,key
             if re.search("\b{0}".format(name),"\b{0}".format(key)):
-                print 'match',name,key
                 if name in combined_SASAs.keys():
                     for resid1 in val['base_sasa'].keys():
                         for resid2 in combined_SASAs[name]['base_sasa'].keys():
