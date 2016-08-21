@@ -80,7 +80,9 @@ def combine_replicates(unpacked_SASAs):
         print "[warning] not all SASA replicates have same number of replicates"
     for name in unique_keys.keys():
         for key,val in unpacked_SASAs.items():
-            if re.search(name,key):
+            print name,key
+            if re.search("\b{0}".format(name),"\b{0}".format(key)):
+                print 'match',name,key
                 if name in combined_SASAs.keys():
                     for resid1 in val['base_sasa'].keys():
                         for resid2 in combined_SASAs[name]['base_sasa'].keys():
@@ -132,24 +134,13 @@ def sasa_stats(SASAs):
         #!!!need to do something with comp_sasa
         SASA_stats[sn]['mean']=np.sum(SASA_stats[sn]['means'])
         SASA_stats[sn]['std']=np.sum(SASA_stats[sn]['stds'])
-    #SASA_stats['max_sasa']=max([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
-    #SASA_stats['min_sasa']=min([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
-    return SASA_stats
-
-
-    """
-    SASAs[sn]['sums']=np.array(SASA_sums)
-    SASAs[sn]['mean']=np.mean(SASA_sums)
-    SASAs[sn]['std']=np.std(SASA_sums)
-    SASAs[sn]['median']=np.median(SASA_sums)
-    SASAs[sn]['max']=max(SASA_sums)
-    SASAs[sn]['min']=min(SASA_sums)
-    max_=max([SASAs[sn]['max'] for sn in SASAs.keys()])
-    min_=min([SASAs[sn]['min'] for sn in SASAs.keys()])
-    SASAs['max_sasa']=max_
-    SASAs['min_sasa']=min_
-    return SASAs
-    """
+    #max_=max([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
+    #min_=min([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
+    #SASA_stats['max_sasa']=max_
+    #SASA_stats['min_sasa']=min_
+    means=[[k,v['mean']] for k,v in SASA_stats.items()]
+    sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
+    return SASA_stats,sorted_keys
 
 def combine_SASAs(unpacked_SASAs,sorted_keys,num_replicates=2):
     # this will only work with a sorted list of keys that contain num_replicate number of 
@@ -256,20 +247,17 @@ def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_
     #picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
 
-def error_SASA(data,sasa_type=sasa_type,plot=True):
+def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True):
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
 	figsize=(12,8))
 
     sasas=data
-    sort_keys=sorted(data.keys())
-    #sasas=unpack_sasas(sort_keys,sasa_type=sasa_type,base_restype=base_restype,comp_restype=comp_restype,res_list=res_list)
+    if not sort_keys: sort_keys=data.keys()
 
     #---PLOT
     counter,xpos,xlim_left = 0,[],0
-    max_SASA=1000#sasas['max_sasa']
-    min_SASA=0#sasas['min_sasa']
     labels=[sasas[name]['active'] for name in sort_keys]
     for snum,sn in enumerate(sort_keys):
 	#---unpack
@@ -278,7 +266,7 @@ def error_SASA(data,sasa_type=sasa_type,plot=True):
 	color = color_dict[activity]
 	#---boxes
 	ax = axes[0]
-        ax.errorbar(x=counter,y=mean,yerr=std,color=color,elinewidth=1,capthick=1,
+        ax.errorbar(x=counter,y=mean,yerr=std,color=color,elinewidth=4,capthick=4,
                     capsize=6,fmt='ko')
 	xpos.append(counter)
         counter+=1
@@ -295,14 +283,16 @@ def error_SASA(data,sasa_type=sasa_type,plot=True):
     used_label=[label_dict[label] for label in set(labels)]
     ax.legend(used_patch,used_label)
     for ax in axes: 
-	ax.set_ylabel(r'relative SASA (A.U.)')
+	ax.set_ylabel(r'SASA (A.U.)')
     if plot:
         fig.show()
     else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
 
-sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=hydrophobic_core)
-#combos=combine_replicates(sasas)
-chunks=chunk_sasa(sasas)
-stats=sasa_stats(chunks)
-error_SASA(stats,sasa_type,plot=True)
+sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=hydrophobic_core[protein])
+combos=combine_replicates(sasas)
+#keys=sorted(sasas.keys())
+#combos,new_keys=combine_SASAs(sasas,keys)
+#chunks=chunk_sasa(sasas)
+stats,keys=sasa_stats(combos)
+error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True)
