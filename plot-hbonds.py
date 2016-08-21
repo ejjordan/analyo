@@ -108,7 +108,7 @@ def read_hbonds(my_data,hbond_keys,timesteps=False,donor_restype=None,acceptor_r
     for name in hbonds: hbonds[name]['active']=work.meta[name]['active']
     return hbonds
 
-def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10):
+def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,divy=False):
     chunk_hbonds={}
     for key in hbond_keys:
         hbonds=unpacked_hbonds[key]
@@ -116,20 +116,25 @@ def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10):
         timeseries_len=len(timeseries)
         chunk_len=timeseries_len/num_chunks
         chunk_steps=range(0,timeseries_len,chunk_len)
-        chunk_hbonds[key]={'active':hbonds['active']}
+        chunk_hbonds[key]={'active':hbonds['active'],'name':' '.join(key.split('_'))}
         for i in range(len(chunk_steps)-1):
             start_time=timeseries[chunk_steps[i]]
             stop_time=timeseries[chunk_steps[i+1]]
             for bond in hbonds:
+                if bond_list and bond not in bond_list: continue
                 if bond=='active': continue
                 if bond not in chunk_hbonds[key]:
                     chunk_hbonds[key][bond]={'donor_residx':hbonds[bond]['donor_residx'],
-                                             'donor_restype':hbonds[bond]['donor_restype'],
-                                             'donor_HA':hbonds[bond]['donor_HA'],
                                              'acceptor_residx':hbonds[bond]['acceptor_residx'],
-                                             'acceptor_restype':hbonds[bond]['acceptor_restype'],
-                                             'acceptor_HA':hbonds[bond]['acceptor_HA'],
                                              'times':{}}
+                    if divy:
+                        chunk_hbonds[key][bond]['donor_loc']=hbonds[bond]['donor_loc']
+                        chunk_hbonds[key][bond]['acceptor_loc']=hbonds[bond]['acceptor_loc']
+                    else:
+                        chunk_hbonds[key][bond]['donor_restype']=hbonds[bond]['donor_restype']
+                        chunk_hbonds[key][bond]['donor_HA']=hbonds[bond]['donor_HA']
+                        chunk_hbonds[key][bond]['acceptor_restype']=hbonds[bond]['acceptor_restype']
+                        chunk_hbonds[key][bond]['acceptor_HA']=hbonds[bond]['acceptor_HA'],
                 times=[time for time in hbonds[bond]['times'] if 
                        float(time)>float(start_time) and float(time)<float(stop_time)]
                 if times:
@@ -145,11 +150,12 @@ def combine_hbonds(unpacked_hbonds,sorted_keys,num_replicates=2,timesteps=False,
     if len(sorted_keys)%num_replicates!=0:
         print "[Error] number of keys is not a multiple of number of replicates; returning."
         return
-    combined_hbonds={}
+    combined_hbonds={};count=0
     for i in range(len(sorted_keys)/num_replicates):
         bonds={};key_list=[]
         for j in range(num_replicates):
-            name=sorted_keys.pop(0)
+            name=sorted_keys[count]
+            count+=1
             key_list.append(name)
             for label in unpacked_hbonds[name]:
                 if label=='active': continue
@@ -272,13 +278,15 @@ def thresh_plotter(thresh,stats=False):
     for sn in thresh:
         for bond in thresh[sn]:
             if bond=='name' or bond=='active': continue
-            labels.append(thresh[sn]['name']+' '+bond)
+
             label_colors.append(thresh[sn]['active'])
             if stats:
+                labels.append(thresh[sn]['name']+' '+bond)
                 means.append(thresh[sn][bond]['mean'])
                 stds.append(thresh[sn][bond]['std'])
             else:
                 values.append(thresh[sn][bond]['occupancy'])
+                labels.append(' '.join(sn.split('_')))
     fig, ax = plt.subplots()
     x_ticks = np.arange(len(labels))
     width=0.8
@@ -406,27 +414,33 @@ if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
 my_data=data
-hbts=read_hbonds(my_data,sort_keys,timesteps=False,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
-#hbts={'active_wt_replicate':hbts['active_wt_replicate']}
-#sort_keys=['active_wt_replicate']
-best_thresh=0.5
+hbts=read_hbonds(my_data,sort_keys,timesteps=True,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
+
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
-#chunks=chunk_hbonds(hbts,sort_keys)
-#del(hbts)
+#deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=0.35)
+#bond_list=list(set(flatten(np.array([deltas[key]['bonds'] for key in deltas]))))
+#chunks=chunk_hbonds(hbts,sort_keys,bond_list=None,divy=True,num_chunks=1)
+
 #var=occupancy_variance(chunks,sort_keys)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
 #thresh_plotter(tstats,stats=True)
+#thresh_plotter(chunks,stats=False)
+threshold=0.6
+title=u'Threshold = {0:1.3f}\n{1}'.format(threshold,'$\\alpha$C helix, activation loop')
 
-def thresh_plt(thresh=0.5):
-    deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=thresh)
-    histofusion(deltas,keys,title=u'Threshold = {0:1.3f}'.format(thresh),plot=True)
+def thresh_plt(thresh=threshold, title=title):
+    deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
+    histofusion(deltas,keys,title=title,plot=True)
 
 def plot_num_bond_scaling(num_bond_scaling=101,bonds=combos,plot=True,xlog=True):
     num_bonds=[]
     for thresh in np.linspace(0,1,num_bond_scaling):
         deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=thresh)
-        bond_list=list(set(flatten(np.array([deltas[key]['bonds'] for key in deltas]))))
+        try:
+            bond_list=list(set(flatten(np.array([deltas[key]['bonds'] for key in deltas]))))
+        except:
+            import pdb;pdb.set_trace()
         num_bonds.append([thresh,len(bond_list)])
     fig, ax = plt.subplots()
     ax.plot([i[1] for i in num_bonds], [i[0] for i in num_bonds])
