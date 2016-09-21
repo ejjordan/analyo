@@ -9,6 +9,7 @@ from common_plot import *
 import matplotlib.gridspec as gridspec
 import numpy as np
 import matplotlib.patches as mpatches
+import json
 
 #---settings
 plotname = 'hbonds'
@@ -20,95 +21,32 @@ colormap = lambda i,n,name='jet': mpl.cm.__dict__[name](float(i)/n)
 #---load the upstream data
 data,calc = plotload(plotname,work)
 
-def read_hbonds(my_data,hbond_keys,timesteps=False,donor_restype=None,acceptor_restype=None,
-                           donor_reslist=None,acceptor_reslist=None,divy=False):
+def hbonds_timesteps(read_hbonds,hbond_keys,donor_restype=None,acceptor_restype=None,
+                     donor_reslist=None,acceptor_reslist=None,divy=False):
     hbonds={}
     main_donor='N'
     main_acceptor='O'
     for sn in hbond_keys:
-        if timesteps: 
-            raw_hbonds=my_data[sn]['data']['hbonds_timesteps'][0]
-            num_steps=len(set([i[9] for i in raw_hbonds]))
-        else: raw_hbonds=my_data[sn]['data']['hbonds_occupancies']
+        raw_hbonds=json.loads(str(read_hbonds[sn]['data']['bonds']))
         hbonds[sn]={}
         if divy: divies={}
         for hbond in raw_hbonds:
             store_hbond=True
-            if donor_restype and hbond[2] not in donor_restype:
+            if donor_restype and raw_hbonds[hbond]['donor_restype'] not in donor_restype:
                 store_hbond=False               
-            if acceptor_restype and hbond[6] not in acceptor_restype:
+            if acceptor_restype and raw_hbonds[hbond]['acceptor_restype'] not in acceptor_restype:
                 store_hbond=False
-            if donor_reslist and int(hbond[3]) not in donor_reslist:
+            if donor_reslist and int(raw_hbonds[hbond]['donor_residx']) not in donor_reslist:
                 store_hbond=False
-            if acceptor_reslist and int(hbond[7]) not in acceptor_reslist:
+            if acceptor_reslist and int(raw_hbonds[hbond]['acceptor_residx']) not in acceptor_reslist:
                 store_hbond=False
             if store_hbond:
-                if divy:
-                    if hbond[4] == main_donor:
-                        donor_loc='main'
-                    else:
-                        donor_loc='side'
-                    if hbond[8] == main_acceptor:
-                        acceptor_loc='main'
-                    else:
-                        acceptor_loc='side'
-                    label='{0} {1} {2} {3} {4} {5}'.format(hbond[2], hbond[3], donor_loc,
-                                                           hbond[6], hbond[7], acceptor_loc)
-                    if label in divies.keys():
-                        if timesteps:
-                            time=divies[label]
-                            time.append(hbond[9])
-                            divies[label]=time
-                        else: divies[label]+=float(hbond[9])
-                    else:
-                        if timesteps: divies[label]=[hbond[9]]
-                        else: divies[label]=float(hbond[9])
-                else:
-                    label='{0} {1} {2} {3} {4} {5}'.format(hbond[2], hbond[3], hbond[4],
-                                                           hbond[6], hbond[7], hbond[8])
-                    if timesteps:
-                        if label in hbonds[sn].keys():
-                            time=hbonds[sn][label]['times']
-                            time.append(hbond[9])
-                            hbonds[sn][label]['times']=time
-                        else: hbonds[sn][label]={'donor_restype':hbond[2], 'donor_residx':hbond[3],
-                                                 'donor_HA':hbond[4], 'acceptor_restype':hbond[6],
-                                                 'acceptor_residx':hbond[7], 'acceptor_HA':hbond[8],
-                                                 'times':[hbond[9]]}
-                    else:
-                        if label in hbonds[sn].keys():
-                            hbonds[sn][label]['occupancy']+=float(hbond[9])
-                        else:
-                            hbonds[sn][label]={'donor_restype':hbond[2], 'donor_residx':hbond[3],
-                                               'donor_HA':hbond[4], 'acceptor_restype':hbond[6],
-                                               'acceptor_residx':hbond[7], 'acceptor_HA':hbond[8],
-                                               'occupancy':float(hbond[9])}
-
-        if divy: 
-            for key,val in divies.items():
-                infos=key.split(' ')
-                if timesteps:
-                    hbonds[sn][key]={'donor_restype':infos[0], 'donor_residx':infos[1],
-                                     'donor_loc':infos[2], 'acceptor_restype':infos[3],
-                                     'acceptor_residx':infos[4], 'acceptor_loc':infos[5],
-                                     'times':val}
-                else:
-                    hbonds[sn][key]={'donor_restype':infos[0], 'donor_residx':infos[1],
-                                     'donor_loc':infos[2], 'acceptor_restype':infos[3],
-                                     'acceptor_residx':infos[4], 'acceptor_loc':infos[5],
-                                     'occupancy':float(val)}
-
-        for hb in hbonds[sn].keys():
-            if timesteps:
-                hbonds[sn][hb]['occupancy']=float('{:0.5f}'.format(len(
-                    hbonds[sn][hb]['times'])/float(num_steps)))
-            else:
-                hbonds[sn][hb]['occupancy']=float('{:0.5f}'.format(hbonds[sn][hb]['occupancy']))
-        #if timesteps: hbonds[sn]['steps']=num_steps
+                hbonds[sn][hbond]=raw_hbonds[hbond]
     for name in hbonds: hbonds[name]['active']=work.meta[name]['active']
     return hbonds
 
-def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,divy=False):
+def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,
+                 divy=False,deltas=False):
     chunk_hbonds={}
     for key in hbond_keys:
         hbonds=unpacked_hbonds[key]
@@ -126,7 +64,7 @@ def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,divy=Fa
                 if bond not in chunk_hbonds[key]:
                     chunk_hbonds[key][bond]={'donor_residx':hbonds[bond]['donor_residx'],
                                              'acceptor_residx':hbonds[bond]['acceptor_residx'],
-                                             'times':{}}
+                                             'times':{},'deltas':{}}
                     if divy:
                         chunk_hbonds[key][bond]['donor_loc']=hbonds[bond]['donor_loc']
                         chunk_hbonds[key][bond]['acceptor_loc']=hbonds[bond]['acceptor_loc']
@@ -141,6 +79,14 @@ def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,divy=Fa
                     chunk_hbonds[key][bond]['times'][i]={'start_time':start_time,
                                                          'stop_time':stop_time, 'times':times,
                                                          'occupancy':len(times)/float(chunk_len)}
+                if deltas and i>0:
+                    one=0;two=0
+                    if i in chunk_hbonds[key][bond]['times']:
+                        one=chunk_hbonds[key][bond]['times'][i]['occupancy']
+                    if i-1 in chunk_hbonds[key][bond]['times']:
+                        two=chunk_hbonds[key][bond]['times'][i-1]['occupancy']
+                    chunk_hbonds[key][bond]['deltas'][i]=one-two
+
     return chunk_hbonds
 
 
@@ -235,7 +181,8 @@ def occupancy_variance(hbonds,sorted_keys,num_chunks=10):
         accumulator[sn]={}
         for chunk in range(num_chunks):
             for bond in hbonds[sn]:
-                if bond=='active' or bond=='start_time' or bond=='stop_time': continue
+                if bond=='active' or bond=='start_time' or bond=='stop_time' or bond=='name':
+                    continue
                 if chunk not in hbonds[sn][bond]['times']: continue
                 if bond in accumulator[sn]:
                     accumulator[sn][bond].append(float(
@@ -273,23 +220,34 @@ def stat_plotter(var,threshold_label='std',threshold=0.2):
     plt.show(block=False)
 
 
-def thresh_plotter(thresh,stats=False):
+def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None):
     labels=[];label_colors=[];values=[];means=[];stds=[]
     for sn in thresh:
         for bond in thresh[sn]:
             if bond=='name' or bond=='active': continue
-
-            label_colors.append(thresh[sn]['active'])
             if stats:
                 labels.append(thresh[sn]['name']+' '+bond)
                 means.append(thresh[sn][bond]['mean'])
                 stds.append(thresh[sn][bond]['std'])
+                label_colors.append(thresh[sn]['active'])
+            elif deltas:
+                for chunk in range(chunks):
+                    chunk+=1
+                    if bond in thresh[sn] and chunk in thresh[sn][bond]['times'] and abs(thresh[sn][bond]['deltas'][chunk])>plot_threshold:
+                        values.append(thresh[sn][bond]['deltas'][chunk])
+                        #else: values.append(0)
+                        labels.append(' '.join(sn.split('_'))+' '+bond+' '+str(chunk))
+                        label_colors.append(thresh[sn]['active'])
             else:
-                values.append(thresh[sn][bond]['occupancy'])
-                labels.append(' '.join(sn.split('_')))
-    fig, ax = plt.subplots()
+                for chunk in range(chunks):
+                    if bond in thresh[sn] and chunk in thresh[sn][bond]['times']:
+                        values.append(thresh[sn][bond]['times'][chunk]['occupancy'])
+                    else: values.append(0)
+                    labels.append(' '.join(sn.split('_'))+' '+bond+' '+str(chunk+1))
+                    label_colors.append(thresh[sn]['active'])
+    fig, ax = plt.subplots(figsize=(18,14))
     x_ticks = np.arange(len(labels))
-    width=0.8
+    width=1
     color_list=np.array([color_dict[i] for i in label_colors])
     label_list=[label_dict[i] for i in label_colors]
     alpha=0.6
@@ -298,11 +256,27 @@ def thresh_plotter(thresh,stats=False):
             ax.errorbar(x=x_ticks[i]-width/2, y=means[i], yerr=stds[i], color=color,
                         elinewidth=1, capthick=1, capsize=6, fmt='ko')
     else:
-        bar = ax.bar(x_ticks-width/2, values, color=color_list, alpha=alpha)
-    ax.set_xticks(x_ticks)
+        bar = ax.bar(x_ticks+width, values, color=color_list, alpha=alpha)
+    ax.set_xticks(x_ticks+1.5*width)
     ax.set_xticklabels(labels, rotation='vertical', ha='center',size='large')
     plt.subplots_adjust(bottom=0.4)
-    plt.show(block=False)
+    if title!=None:
+        plt.title(title,size='x-large')
+    patches={
+        True:mpatches.Patch(color=color_dict[True], label='activating', alpha=alpha),
+        False:mpatches.Patch(color=color_dict[False], label='non-activating', alpha=alpha),
+        'wt':mpatches.Patch(color=color_dict['wt'], label='wild type', alpha=alpha),
+        'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown', alpha=alpha)}    
+    used_patch=[patches[label] for label in set(label_colors)]
+    used_label=[label_dict[label] for label in set(label_colors)]
+    #ax.legend(used_patch,used_label)
+    ax.legend(used_patch,used_label, loc=8, ncol=3)
+    if plot:
+        plt.show(block=False)
+    else:
+        picturesave('fig.histogram-%s'%(plotname),work.plotdir,backup=False,
+                    version=True,meta=meta,dpi=400)
+
 
 def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, y_limits=False,
                 ylabel='H-bonds occupancy difference',meta=None):
@@ -405,7 +379,6 @@ def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=No
     return best_threshold
 
 
-
 #finalize the data and call the plotter
 protein=work.c
 domains=get_subdomains(protein)
@@ -413,20 +386,20 @@ if not domains: print "[ERROR] no subdomains found"; exit
 
 
 sort_keys=sorted(data.keys())
-my_data=data
-hbts=read_hbonds(my_data,sort_keys,timesteps=True,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
+hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
+#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=None,acceptor_reslist=[1276],divy=True)
 
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
-#deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=0.35)
-#bond_list=list(set(flatten(np.array([deltas[key]['bonds'] for key in deltas]))))
-#chunks=chunk_hbonds(hbts,sort_keys,bond_list=None,divy=True,num_chunks=1)
-
+deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=0.75)
+bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
+chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 #var=occupancy_variance(chunks,sort_keys)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
-#thresh_plotter(tstats,stats=True)
-#thresh_plotter(chunks,stats=False)
-threshold=0.6
+#thresh_plotter(chunks,stats=False,chunks=1,deltas=True)
+thresh_plotter(chunks,stats=False,chunks=1,deltas=True,plot=False,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':0.75,'plot threshold':0.4,'bond_list':bond_list})
+threshold=0.75
+#histofusion(deltas,keys,title='residues 1275, 1279, 1284, 1285',plot=True)
 title=u'Threshold = {0:1.3f}\n{1}'.format(threshold,'$\\alpha$C helix, activation loop')
 
 def thresh_plt(thresh=threshold, title=title):
