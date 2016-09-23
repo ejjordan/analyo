@@ -235,7 +235,6 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
                     chunk+=1
                     if bond in thresh[sn] and chunk in thresh[sn][bond]['times'] and abs(thresh[sn][bond]['deltas'][chunk])>plot_threshold:
                         values.append(thresh[sn][bond]['deltas'][chunk])
-                        #else: values.append(0)
                         labels.append(' '.join(sn.split('_'))+' '+bond+' '+str(chunk))
                         label_colors.append(thresh[sn]['active'])
             else:
@@ -274,7 +273,7 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
     if plot:
         plt.show(block=False)
     else:
-        picturesave('fig.histogram-%s'%(plotname),work.plotdir,backup=False,
+        picturesave('fig.delta_bonds-%s'%(plotname),work.plotdir,backup=False,
                     version=True,meta=meta,dpi=400)
 
 
@@ -387,20 +386,20 @@ if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
 hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
-#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=None,acceptor_reslist=[1276],divy=True)
-
+#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=[603],acceptor_reslist=None,divy=True)
+threshold=0.7
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
-deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=0.75)
+deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
 bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
 chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 #var=occupancy_variance(chunks,sort_keys)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
 #thresh_plotter(chunks,stats=False,chunks=1,deltas=True)
-thresh_plotter(chunks,stats=False,chunks=1,deltas=True,plot=False,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':0.75,'plot threshold':0.4,'bond_list':bond_list})
-threshold=0.75
-#histofusion(deltas,keys,title='residues 1275, 1279, 1284, 1285',plot=True)
-title=u'Threshold = {0:1.3f}\n{1}'.format(threshold,'$\\alpha$C helix, activation loop')
+#thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=False,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list})
+title=u'Threshold = {0:1.3f}\nResdiues: {1}'.format(threshold,'$\\alpha$C helix, activation loop')
+histofusion(deltas,keys,title=title,plot=True,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
+
 
 def thresh_plt(thresh=threshold, title=title):
     deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
