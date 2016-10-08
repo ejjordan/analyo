@@ -220,8 +220,8 @@ def stat_plotter(var,threshold_label='std',threshold=0.2):
     plt.show(block=False)
 
 
-def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None):
-    labels=[];label_colors=[];values=[];means=[];stds=[]
+def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None,residue_to_highlight=None):
+    labels=[];label_colors=[];label_marks=[];values=[];means=[];stds=[]
     for sn in thresh:
         for bond in thresh[sn]:
             if bond=='name' or bond=='active': continue
@@ -235,7 +235,13 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
                     chunk+=1
                     if bond in thresh[sn] and chunk in thresh[sn][bond]['times'] and abs(thresh[sn][bond]['deltas'][chunk])>plot_threshold:
                         values.append(thresh[sn][bond]['deltas'][chunk])
+                        mark='black'
+                        if residue_to_highlight:
+                            bond_data=bond.split()
+                            if str(residue_to_highlight) in bond_data:
+                                mark='red'
                         labels.append(' '.join(sn.split('_'))+' '+bond+' '+str(chunk))
+                        label_marks.append(mark)
                         label_colors.append(thresh[sn]['active'])
             else:
                 for chunk in range(chunks):
@@ -259,6 +265,9 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
     ax.set_xticks(x_ticks+1.5*width)
     ax.set_xticklabels(labels, rotation='vertical', ha='center',size='large')
     plt.subplots_adjust(bottom=0.4)
+    if residue_to_highlight:
+        [label_text.set_color(label_marks[i]) for i,label_text in enumerate(plt.gca().get_xticklabels())]
+        print "number of bonds: {0}\nnumber of bonds highlighted: {1}".format(len(label_marks),len([i for i in label_marks if i=='red']))
     if title!=None:
         plt.title(title,size='x-large')
     patches={
@@ -274,7 +283,7 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
         plt.show(block=False)
     else:
         picturesave('fig.delta_bonds-%s'%(plotname),work.plotdir,backup=False,
-                    version=True,meta=meta,dpi=400)
+                    version=True,meta=meta,dpi=200)
 
 
 def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, y_limits=False,
@@ -396,9 +405,10 @@ chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,de
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
 #thresh_plotter(chunks,stats=False,chunks=1,deltas=True)
-#thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=False,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list})
+hili_res=1284
+thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 title=u'Threshold = {0:1.3f}\nResdiues: {1}'.format(threshold,'$\\alpha$C helix, activation loop')
-histofusion(deltas,keys,title=title,plot=True,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
+#histofusion(deltas,keys,title=title,plot=True,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
 
 
 def thresh_plt(thresh=threshold, title=title):
