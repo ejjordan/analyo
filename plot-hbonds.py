@@ -42,7 +42,7 @@ def hbonds_timesteps(read_hbonds,hbond_keys,donor_restype=None,acceptor_restype=
                 store_hbond=False
             if store_hbond:
                 hbonds[sn][hbond]=raw_hbonds[hbond]
-    for name in hbonds: hbonds[name]['active']=work.meta[name]['active']
+    for name in hbonds: hbonds[name]['kcat']=work.meta[name]['kcat']
     return hbonds
 
 def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,
@@ -54,13 +54,13 @@ def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,
         timeseries_len=len(timeseries)
         chunk_len=timeseries_len/num_chunks
         chunk_steps=range(0,timeseries_len,chunk_len)
-        chunk_hbonds[key]={'active':hbonds['active'],'name':' '.join(key.split('_'))}
+        chunk_hbonds[key]={'kcat':hbonds['kcat'],'name':' '.join(key.split('_'))}
         for i in range(len(chunk_steps)-1):
             start_time=timeseries[chunk_steps[i]]
             stop_time=timeseries[chunk_steps[i+1]]
             for bond in hbonds:
                 if bond_list and bond not in bond_list: continue
-                if bond=='active': continue
+                if bond=='kcat': continue
                 if bond not in chunk_hbonds[key]:
                     chunk_hbonds[key][bond]={'donor_residx':hbonds[bond]['donor_residx'],
                                              'acceptor_residx':hbonds[bond]['acceptor_residx'],
@@ -103,8 +103,8 @@ def combine_hbonds(unpacked_hbonds,sorted_keys,num_replicates=2,timesteps=False,
             name=sorted_keys[count]
             count+=1
             key_list.append(name)
-            for label in unpacked_hbonds[name]:
-                if label=='active': continue
+            for label in unpacked_hbonds[name]:                
+                if label=='kcat': continue
                 if label in bonds: bonds[label].append(unpacked_hbonds[name][label]['occupancy'])
                 else: bonds[label]=[unpacked_hbonds[name][label]['occupancy']]
         name=min(key_list,key=len)
@@ -126,7 +126,7 @@ def combine_hbonds(unpacked_hbonds,sorted_keys,num_replicates=2,timesteps=False,
                                               'max':max(occupancies), 'min':min(occupancies)}
     for name in combined_hbonds:
         combined_hbonds[name]['name']=' '.join(name.split('_'))
-        combined_hbonds[name]['active']=unpacked_hbonds[name]['active']
+        combined_hbonds[name]['kcat']=unpacked_hbonds[name]['kcat']
     return combined_hbonds
         
 def occupancy_diff(hbonds,reference=None,threshold=0.4):
@@ -134,10 +134,10 @@ def occupancy_diff(hbonds,reference=None,threshold=0.4):
     bond_list=list(set([label for name in hbonds for label in hbonds[name]]))
     for sn in hbonds:
         if sn==reference: continue
-        altered_donors[sn]={'delta':0, 'name':hbonds[sn]['name'], 'active':hbonds[sn]['active'],
-                            'bonds':[]}
+        altered_donors[sn]={'delta':0, 'name':hbonds[sn]['name'], 'kcat':hbonds[sn]['kcat'],
+                            'kcat':hbonds[sn]['kcat'], 'bonds':[]}
         for bond in bond_list:
-            if bond=='name' or bond=='active': continue
+            if bond=='name' or bond=='kcat': continue
             if bond in hbonds[sn].keys() or bond in hbonds[reference].keys():
                 if bond not in hbonds[reference].keys(): hbonds[reference][bond]={'mean':0}
                 if bond not in hbonds[sn].keys(): hbonds[sn][bond]={'mean':0}
@@ -152,9 +152,9 @@ def occupancy_diff(hbonds,reference=None,threshold=0.4):
 def occupancy_thresholder(hbonds,threshold=0.4):
     threshold_donors={}
     for sn in hbonds:
-        threshold_donors[sn]={'name':' '.join(sn.split('_')), 'active':hbonds[sn]['active']}
+        threshold_donors[sn]={'name':' '.join(sn.split('_')), 'kcat':hbonds[sn]['kcat']}
         for bond in hbonds[sn]:
-            if bond=='name' or bond=='active' or bond=='start_time' or bond=='stop_time': continue
+            if bond=='name' or bond=='kcat' or bond=='start_time' or bond=='stop_time': continue
             occupancy=hbonds[sn][bond]['occupancy']
             if occupancy>threshold:
                 threshold_donors[sn][bond]={'occupancy':occupancy}
@@ -163,9 +163,9 @@ def occupancy_thresholder(hbonds,threshold=0.4):
 def occupancy_stats_thresholder(hbonds,threshold_label='mean',threshold=0.4):
     threshold_donors={}
     for sn in hbonds:
-        threshold_donors[sn]={'name':' '.join(sn.split('_')), 'active':hbonds[sn]['active']}
+        threshold_donors[sn]={'name':' '.join(sn.split('_')), 'kcat':hbonds[sn]['kcat']}
         for bond in hbonds[sn]:
-            if bond=='name' or bond=='active' or bond=='start_time' or bond=='stop_time': continue
+            if bond=='name' or bond=='kcat' or bond=='start_time' or bond=='stop_time': continue
             value=hbonds[sn][bond][threshold_label]
             if value>threshold:
                 threshold_donors[sn][bond]={'mean':hbonds[sn][bond]['mean'],
@@ -181,7 +181,7 @@ def occupancy_variance(hbonds,sorted_keys,num_chunks=10):
         accumulator[sn]={}
         for chunk in range(num_chunks):
             for bond in hbonds[sn]:
-                if bond=='active' or bond=='start_time' or bond=='stop_time' or bond=='name':
+                if bond=='kcat' or bond=='start_time' or bond=='stop_time' or bond=='name':
                     continue
                 if chunk not in hbonds[sn][bond]['times']: continue
                 if bond in accumulator[sn]:
@@ -198,13 +198,13 @@ def occupancy_variance(hbonds,sorted_keys,num_chunks=10):
                                    'min':min(bond_frames_list),
                                    'max':max(bond_frames_list)}
             accumulator[sn][bond]['delta']=accumulator[sn][bond]['max']-accumulator[sn][bond]['min']
-        accumulator[sn]['active']=hbonds[sn]['active']
+        accumulator[sn]['kcat']=hbonds[sn]['kcat']
     return accumulator
 
 def stat_plotter(var,threshold_label='std',threshold=0.2):
     stat=occupancy_stats_thresholder(var,threshold_label,threshold)
     keys=stat.keys()
-    stats=[[key,stat[key]['active'],len(stat[key].keys())-2] for key in keys]
+    stats=[[key,stat[key]['kcat'],len(stat[key].keys())-2] for key in keys]
     labels=[];label_colors=[];values=[]
     for stat in stats:
         labels.append(' '.join(stat[0].split('_')))
@@ -220,11 +220,12 @@ def stat_plotter(var,threshold_label='std',threshold=0.2):
     plt.show(block=False)
 
 
+"""
 def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None,residue_to_highlight=None):
     labels=[];label_colors=[];label_marks=[];values=[];means=[];stds=[]
     for sn in thresh:
         for bond in thresh[sn]:
-            if bond=='name' or bond=='active': continue
+            if bond=='name' or bond=='kcat': continue
             if stats:
                 labels.append(thresh[sn]['name']+' '+bond)
                 means.append(thresh[sn][bond]['mean'])
@@ -284,15 +285,35 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
     else:
         picturesave('fig.delta_bonds-%s'%(plotname),work.plotdir,backup=False,
                     version=True,meta=meta,dpi=200)
+"""
 
+def label_maker(deltas, kcat_cut=33, name_list=None):
+
+    """
+    This function takes a 'delta' object and a kcat cut-off and returns activation (or 
+    non-activation) labels. If supplied a name_list the labels will be returned in the
+    specified order.
+    """
+    
+    if not name_list: name_list=[deltas[sn]['name'] for sn in deltas]
+    kcats=[deltas[name]['kcat'] for name in name_list]
+    labels=[]
+    for kcat in kcats:
+        if kcat=='X': labels.append('maybe')
+        elif kcat=='WT': labels.append('wt')
+        elif float(kcat)>kcat_cut:
+            labels.append(True)
+        else:
+            labels.append(False)
+    return labels
 
 def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, y_limits=False,
-                ylabel='H-bonds occupancy difference',meta=None):
+                ylabel='H-bonds occupancy difference', meta=None, kcat_cut=20):
     sorted_names=keys
     avgs=np.array([deltas[name]['delta'] for name in sorted_names])
     #maxs=np.array([data[name]['max'] for name in sorted_names])
     #mins=np.array([data[name]['min'] for name in sorted_names])
-    labels=[deltas[name]['active'] for name in sorted_names]
+    labels=label_maker(deltas, kcat_cut, name_list=sorted_names)
     mutations=[deltas[name]['name'] for name in sorted_names]
     fig, ax = plt.subplots()
     x_ticks = np.arange(len(labels))
@@ -329,10 +350,11 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, 
 
 
 
-def confusion(data):
-    names=[name for name in data if data[name]['active'] not in ['wt','maybe']]
+def confusion(data, kcat_cut):
+    names=[name for name in data if data[name]['kcat'] not in ['WT','X']]
     values=[data[name]['delta'] for name in names]
-    labels=[data[name]['active'] for name in names]
+    labels=label_maker(data, kcat_cut,name_list=names)
+
     confusion={}
     for threshold in values:
         predictions=[]
@@ -356,35 +378,95 @@ def confusion(data):
                     fp+=1
         TPR=tp/float(tp+fn)
         FPR=fp/float(fp+tn)
-        #roc=skm.roc_auc_score(np.array(labels,dtype=int),np.array(predictions))
         confusion[threshold]={'tpr':TPR, 'fpr':FPR, 'tp':tp, 'fp':fp, 'fn':fn, 'tn':tn}
     return confusion
+
+
+
+"""
+    predictions=[]
     
-def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=None,plot=True):
+    for value in values:
+        if value>0:
+            predictions.append(True)
+        else:
+            predictions.append(False)
+
+    #import pdb;pdb.set_trace()
+    import sklearn.metrics as skm
+    fpr,tpr,thresholds=skm.roc_curve(predictions,values,True)
+
+    tp=0;fp=0;tn=0;fn=0
+    for i in range(len(predictions)):
+        if predictions[i]==labels[i]:
+            #print predictions[i],labels[i]
+            if labels[i]==True:
+                tp+=1
+            elif labels[i]==False:
+                tn+=1
+        elif predictions[i]!=labels[i]:
+            if labels[i]==True:
+                fn+=1
+            elif labels[i]==False:
+                fp+=1
+    TPR=tp/float(tp+fn)
+    FPR=fp/float(fp+tn)
+    confusion={'tpr':fpr, 'fpr':fpr, 'tp':tp, 'fp':fp, 'fn':fn, 'tn':tn}
+    #import pdb;pdb.set_trace()
+    return confusion
+"""
+    
+def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=None, plot=True,
+                      parameter='kcat', metric='ROC'):
     sweep_limits=np.linspace(limits[0],limits[1],limits[2])
-    params=[]
-    for i in sweep_limits:
-        deltas,keys=occupancy_diff(in_data, reference=reference, threshold=i)
-        preds=confusion(deltas)
-        rate=max([preds[pred]['tp']-preds[pred]['fp'] for pred in preds])
-        params.append([i,rate])
-    params=np.array(params)
-    x=np.transpose(params)[0]
-    y=np.transpose(params)[1]
     fig, ax = plt.subplots()
-    ax.plot(x,y)
+    figdat=[]
+    for i in sweep_limits:
+        if parameter=='threshold':
+            kcat=9;thresh=i
+        if parameter=='kcat':
+            kcat=i;thresh=0.3
+        deltas,keys=occupancy_diff(in_data, reference=reference, threshold=thresh)
+        preds=confusion(deltas,kcat_cut=kcat)
+        #histofusion(deltas,keys,plot=True,kcat_cut=kcat,title="kcat {0} fp {1} tp {2} fn {3} tn {4}".format(int(kcat),preds['fp'],preds['tp'],preds['fn'],preds['tn']))
+        if metric=='ROC':
+            x,y=[],[]
+            sort_preds_keys=sorted(preds.keys(),reverse=True)
+            for pred in sort_preds_keys:
+                x.append(preds[pred]['fpr'])
+                y.append(preds[pred]['tpr'])
+            #import pdb;pdb.set_trace()
+            figdat.append([x,y,i])
+            #print x
+            #print y,i
+            plt.plot(x,y,label=i)
+            #print preds,i
+            plt.ylabel('True Positive Rate',size='x-large')
+            plt.xlabel('False Positive Rate',size='x-large')
+            ax.set_xlim(0,1.01)
+            ax.set_ylim(0,1.01)
+            ax.plot([0,1.1],[0,1.1],'--')
+        if metric=='tp-fp':
+            y.append(preds['tp']-preds['fp'])
+            x.append(i)
+            plt.ylabel('(True Positive) - (False Positive)',size='x-large')
+            if parameter=='kcat':
+                plt.xlabel('kcat',size='x-large')
+            if parameter=='threshold':
+                plt.xlabel('H-bond differential threshold',size='x-large')
+
+    #import pdb;pdb.set_trace()
+    plt.legend(loc='best')
     if title!=None:
         plt.title(title,size='x-large')
-    plt.ylabel('(True Positive) - (False Positive)',size='x-large')
-    plt.xlabel('H-bond differential threshold',size='x-large')
     if plot:
         plt.show(block=False)
     else:
         picturesave('fig.parameter-sweep-%s'%(plotname),work.plotdir,backup=False,
                     version=True,meta={},dpi=200)
-    best_rate=max([i[1] for i in params])
-    best_threshold=min([i[0] for i in params if i[1]==best_rate])
-    return best_threshold
+    #best_rate=max([i[1] for i in params])
+    #best_threshold=min([i[0] for i in params if i[1]==best_rate])
+    #return best_threshold
 
 
 #finalize the data and call the plotter
@@ -395,21 +477,22 @@ if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
 hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
-#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=[603],acceptor_reslist=None,divy=True)
-threshold=0.7
+#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=None,acceptor_reslist=None,divy=True)
+threshold=0.75
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
-deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
-bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
-chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
+#deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
+#bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
+#chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 #var=occupancy_variance(chunks,sort_keys)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
 #thresh_plotter(chunks,stats=False,chunks=1,deltas=True)
 hili_res=1284
-thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
+#thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 title=u'Threshold = {0:1.3f}\nResdiues: {1}'.format(threshold,'$\\alpha$C helix, activation loop')
-#histofusion(deltas,keys,title=title,plot=True,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
+#histofusion(deltas,keys,title=title,plot=True,kcat_cut=10,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
 
+parameter_sweep1D(combos, limits=[10,40,4])
 
 def thresh_plt(thresh=threshold, title=title):
     deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
