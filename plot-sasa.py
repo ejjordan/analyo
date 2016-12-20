@@ -12,7 +12,6 @@ import re
 
 #---settings
 plotname = 'sasa'
-rmsd_bin_step = 0.1
 
 #---colors
 import matplotlib.patheffects as path_effects
@@ -36,7 +35,7 @@ def filter_sasas(SASA_keys,sasa_type=sasa_type,base_restype=None,comp_restype=No
     for sn in SASA_keys:
         raw_sasa=zip(data[sn]['data']['resname'],data[sn]['data']['resid'],
                        data[sn]['data'][sasa_type])
-        SASAs[sn]={'name':' '.join(sn.split('_')), 'active':work.meta[sn]['active'],
+        SASAs[sn]={'name':' '.join(sn.split('_')), 'kcat':work.meta[sn]['kcat'],
                    'base_sasa':{}}
         if comp_restype: SASAs[sn]['comp_sasa']={}
         if type(res_list)!=list: 
@@ -125,7 +124,7 @@ def chunk_sasa(unpacked_SASAs,chunk_length=500,sasa_length=5001):
 def sasa_stats(SASAs):
     SASA_stats={}
     for sn,info in SASAs.items():
-        SASA_stats[sn]={'name':' '.join(info['name'].split('_')), 'active':info['active']}
+        SASA_stats[sn]={'name':' '.join(info['name'].split('_')), 'kcat':info['kcat']}
         SASA_stats[sn]['means']=[np.mean(val['sasa_vals']) for val in info['base_sasa'].values()]
         SASA_stats[sn]['stds']=[np.std(val['sasa_vals']) for val in info['base_sasa'].values()]
         SASA_stats[sn]['median']=[np.median(val['sasa_vals']) for val in info['base_sasa'].values()]
@@ -256,11 +255,14 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True):
 
     #---PLOT
     counter,xpos,xlim_left = 0,[],0
-    labels=[sasas[name]['active'] for name in sort_keys]
+    #labels=[sasas[name]['active'] for name in sort_keys]
+    labels=label_maker(sasas,kcat_cut=30,name_list=sort_keys)
+    #import pdb;pdb.set_trace()
     for snum,sn in enumerate(sort_keys):
 	#---unpack
         mean=sasas[sn]['mean'];std=sasas[sn]['std']
-        name=sasas[sn]['name'];activity=sasas[sn]['active']
+        name=sasas[sn]['name'];activity=labels[snum]
+        kcat=sasas[sn]['kcat']
 	color = color_dict[activity]
 	#---boxes
 	ax = axes[0]
@@ -285,6 +287,26 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True):
     if plot:
         fig.show()
     else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta={})
+
+def label_maker(sasas, kcat_cut=33, name_list=None):
+
+    """
+    This function takes a 'sasa' object and a kcat cut-off and returns activation (or 
+    non-activation) labels. If supplied a name_list the labels will be returned in the
+    specified order.
+    """
+    
+    if not name_list: name_list=[sasas[sn]['name'] for sn in sasas]
+    kcats=[sasas[name]['kcat'] for name in name_list]
+    labels=[]
+    for kcat in kcats:
+        if kcat=='X': labels.append('maybe')
+        elif kcat=='WT': labels.append('wt')
+        elif float(kcat)>kcat_cut:
+            labels.append(True)
+        else:
+            labels.append(False)
+    return labels
 
 
 sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=hydrophobic_core[protein])
