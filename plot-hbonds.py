@@ -381,51 +381,17 @@ def confusion(data, kcat_cut):
         confusion[threshold]={'tpr':TPR, 'fpr':FPR, 'tp':tp, 'fp':fp, 'fn':fn, 'tn':tn}
     return confusion
 
-
-
-"""
-    predictions=[]
-    
-    for value in values:
-        if value>0:
-            predictions.append(True)
-        else:
-            predictions.append(False)
-
-    #import pdb;pdb.set_trace()
-    import sklearn.metrics as skm
-    fpr,tpr,thresholds=skm.roc_curve(predictions,values,True)
-
-    tp=0;fp=0;tn=0;fn=0
-    for i in range(len(predictions)):
-        if predictions[i]==labels[i]:
-            #print predictions[i],labels[i]
-            if labels[i]==True:
-                tp+=1
-            elif labels[i]==False:
-                tn+=1
-        elif predictions[i]!=labels[i]:
-            if labels[i]==True:
-                fn+=1
-            elif labels[i]==False:
-                fp+=1
-    TPR=tp/float(tp+fn)
-    FPR=fp/float(fp+tn)
-    confusion={'tpr':fpr, 'fpr':fpr, 'tp':tp, 'fp':fp, 'fn':fn, 'tn':tn}
-    #import pdb;pdb.set_trace()
-    return confusion
-"""
     
 def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=None, plot=True,
-                      parameter='kcat', metric='ROC'):
+                      parameter='threshold', metric='ROC', meta=None, alt_param=None):
     sweep_limits=np.linspace(limits[0],limits[1],limits[2])
     fig, ax = plt.subplots()
     figdat=[]
     for i in sweep_limits:
         if parameter=='threshold':
-            kcat=9;thresh=i
+            kcat=alt_param;thresh=i
         if parameter=='kcat':
-            kcat=i;thresh=0.3
+            kcat=i;thresh=alt_param
         deltas,keys=occupancy_diff(in_data, reference=reference, threshold=thresh)
         preds=confusion(deltas,kcat_cut=kcat)
         #histofusion(deltas,keys,plot=True,kcat_cut=kcat,title="kcat {0} fp {1} tp {2} fn {3} tn {4}".format(int(kcat),preds['fp'],preds['tp'],preds['fn'],preds['tn']))
@@ -435,12 +401,8 @@ def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=No
             for pred in sort_preds_keys:
                 x.append(preds[pred]['fpr'])
                 y.append(preds[pred]['tpr'])
-            #import pdb;pdb.set_trace()
             figdat.append([x,y,i])
-            #print x
-            #print y,i
             plt.plot(x,y,label=i)
-            #print preds,i
             plt.ylabel('True Positive Rate',size='x-large')
             plt.xlabel('False Positive Rate',size='x-large')
             ax.set_xlim(0,1.01)
@@ -455,7 +417,6 @@ def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=No
             if parameter=='threshold':
                 plt.xlabel('H-bond differential threshold',size='x-large')
 
-    #import pdb;pdb.set_trace()
     plt.legend(loc='best')
     if title!=None:
         plt.title(title,size='x-large')
@@ -463,7 +424,7 @@ def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=No
         plt.show(block=False)
     else:
         picturesave('fig.parameter-sweep-%s'%(plotname),work.plotdir,backup=False,
-                    version=True,meta={},dpi=200)
+                    version=True,meta=meta,dpi=200)
     #best_rate=max([i[1] for i in params])
     #best_threshold=min([i[0] for i in params if i[1]==best_rate])
     #return best_threshold
@@ -480,7 +441,7 @@ hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, ac
 #hbts=hbonds_timesteps(data,sort_keys,donor_reslist=None,acceptor_reslist=None,divy=True)
 threshold=0.75
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
-#deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
+deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
 #bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
 #chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 #var=occupancy_variance(chunks,sort_keys)
@@ -490,9 +451,10 @@ combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 hili_res=1284
 #thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 title=u'Threshold = {0:1.3f}\nResdiues: {1}'.format(threshold,'$\\alpha$C helix, activation loop')
-#histofusion(deltas,keys,title=title,plot=True,kcat_cut=10,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
+#histofusion(deltas,keys,title=title,plot=True,kcat_cut=30,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
 
-parameter_sweep1D(combos, limits=[10,40,4])
+kcat=30;metric='ROC';param='kcat'
+parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
 
 def thresh_plt(thresh=threshold, title=title):
     deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
