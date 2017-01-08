@@ -167,11 +167,9 @@ def combine_SASAs(unpacked_SASAs,sorted_keys,num_replicates=2):
     return combined_SASAs,new_sorted_keys
     
 
-def each_SASA(data,sasa_type=sasa_type,base_restype=polar,comp_restype=hydrophobic,res_list=None):
-    sort_keys=sorted(data.keys())
-    sasas=unpack_sasas(sort_keys,sasa_type=sasa_type,base_restype=comp_restype,
-                       comp_restype=comp_res_type,res_list=res_list)
+def each_SASA(sasas,sort_keys,kcat_cut=30):
     num_sims=len(sort_keys)
+    labels=label_maker(sasas,kcat_cut=kcat_cut,name_list=sort_keys)
     base_size = 20.
     wide_factor = 1.5
     color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
@@ -182,14 +180,16 @@ def each_SASA(data,sasa_type=sasa_type,base_restype=polar,comp_restype=hydrophob
     axes = [plt.subplot(gs[plot_num/ncols,plot_num%ncols]) for plot_num in range(num_sims)]
     for plot_num,ax in enumerate(axes):
         SASA=sasas[sort_keys[plot_num]]
-        name=SASA['name'];activity=SASA['active'];SASA_sums=SASA['sums']
-        ts = np.array(range(len(SASA_sums)))
-        ax.plot(ts,SASA_sums,color=color_dict[activity])
+        ts_sasa=np.sum([SASA['base_sasa'][res]['sasa_vals'] for res in SASA['base_sasa']],axis=0)
+        name=SASA['name'];activity=labels[plot_num]
+        ts = np.array(range(len(ts_sasa)))
+        #print plot_num,name,ts
+        ax.plot(ts,ts_sasa,color=color_dict[activity])
         ax.set_title(name)
         ax.tick_params(axis='y',which='both',left='off',right='off',labelleft='on')
         ax.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='on')
-    max_SASA=sasas['max_sasa']
-    min_SASA=sasas['min_sasa']
+    max_SASA=350#sasas['max_sasa']
+    min_SASA=0#sasas['min_sasa']
     for plot_num,ax in enumerate(axes):
         ax.set_ylim(min_SASA,max_SASA)
     plt.show()
@@ -309,10 +309,12 @@ def label_maker(sasas, kcat_cut=33, name_list=None):
     return labels
 
 
+
 sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=hydrophobic_core[protein])
-combos=combine_replicates(sasas)
-#keys=sorted(sasas.keys())
+#combos=combine_replicates(sasas)
+keys=sorted(sasas.keys())
 #combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
-stats,keys=sasa_stats(combos)
-error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True)
+#stats,keys=sasa_stats(sasas)
+#error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True)
+each_SASA(sasas,keys)
