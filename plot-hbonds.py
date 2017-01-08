@@ -450,11 +450,12 @@ deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
 #thresh_plotter(chunks,stats=False,chunks=1,deltas=True)
 hili_res=1284
 #thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
-title=u'Threshold = {0:1.3f}\nResdiues: {1}'.format(threshold,'$\\alpha$C helix, activation loop')
-#histofusion(deltas,keys,title=title,plot=True,kcat_cut=30,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop'})
 
-kcat=30;metric='ROC';param='kcat'
-parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
+kcat=20;metric='ROC';param='kcat'
+title=u'Threshold = {0:1.3f}\tkcat: {1}\nResdiues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
+#parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
+histofusion(deltas,keys,title=title,plot=True,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat})
+
 
 def thresh_plt(thresh=threshold, title=title):
     deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)

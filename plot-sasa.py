@@ -244,7 +244,7 @@ def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_
     #picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
 
-def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True):
+def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title=None,kcat=30):
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
@@ -256,7 +256,7 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True):
     #---PLOT
     counter,xpos,xlim_left = 0,[],0
     #labels=[sasas[name]['active'] for name in sort_keys]
-    labels=label_maker(sasas,kcat_cut=30,name_list=sort_keys)
+    labels=label_maker(sasas,kcat_cut=kcat,name_list=sort_keys)
     #import pdb;pdb.set_trace()
     for snum,sn in enumerate(sort_keys):
 	#---unpack
@@ -281,12 +281,14 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True):
         'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown', alpha=alpha)}    
     used_patch=[patches[label] for label in set(labels)]
     used_label=[label_dict[label] for label in set(labels)]
+    if title!=None:
+        plt.title(title,size='x-large')
     ax.legend(used_patch,used_label)
     for ax in axes: 
 	ax.set_ylabel(r'SASA (A.U.)')
     if plot:
         fig.show()
-    else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta={})
+    else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
 
 def label_maker(sasas, kcat_cut=33, name_list=None):
 
@@ -316,5 +318,6 @@ keys=sorted(sasas.keys())
 #combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
 #stats,keys=sasa_stats(sasas)
-#error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True)
 each_SASA(sasas,keys)
+#kcat=30;error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title='kcat {0}'.format(kcat),meta={'kcat':kcat},kcat=kcat)
+
