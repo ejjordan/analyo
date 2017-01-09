@@ -339,14 +339,14 @@ def label_maker(sasas, kcat_cut=33, name_list=None):
     return labels
 
 
-
-sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=hydrophobic_core[protein])
-#combos=combine_replicates(sasas)
+res_list=hydrophobic_core[protein]
+sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=res_list)
+combos=combine_replicates(sasas)
 keys=sorted(sasas.keys())
 #combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
-#stats,keys=sasa_stats(sasas)
-#kcat=30;error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title='kcat {0}'.format(kcat),meta={'kcat':kcat},kcat=kcat)
+stats,keys=sasa_stats(combos)
+#kcat=30;error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title='kcat {0}'.format(kcat),meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
 #each_SASA(sasas,keys,plot=False)
 #for key in keys:
 #    one_SASA(sasas[key],plot=False)

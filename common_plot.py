@@ -7,6 +7,7 @@ hydrophobic_core={'alk':[1096,1098,1170,1171,1174,1179,1239,1245,1271,1240],
                   'egfr':[765,766,769,774,827,828,833,856],
                   'braf':[504,505,513,566,567,572,595],
                   'her2':[773,774,777,782,835,836,841,864]}
+hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
 label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
 color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
 
