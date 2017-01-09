@@ -1,0 +1,3 @@
+[submodule "codes/vmdmake"]
+	path = codes/vmdmake
+	url = https://github.com/biophyscode/vmdmake

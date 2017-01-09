@@ -167,7 +167,7 @@ def combine_SASAs(unpacked_SASAs,sorted_keys,num_replicates=2):
     return combined_SASAs,new_sorted_keys
     
 
-def each_SASA(sasas,sort_keys,kcat_cut=30):
+def each_SASA(sasas,sort_keys,kcat_cut=30,plot=True,meta=None):
     num_sims=len(sort_keys)
     labels=label_maker(sasas,kcat_cut=kcat_cut,name_list=sort_keys)
     base_size = 20.
@@ -178,21 +178,49 @@ def each_SASA(sasas,sort_keys,kcat_cut=30):
     fig = plt.figure(figsize=(base_size,base_size*(float(nrows)/ncols)/wide_factor))
     gs = gridspec.GridSpec(nrows,ncols,hspace=0.65,wspace=0.8)
     axes = [plt.subplot(gs[plot_num/ncols,plot_num%ncols]) for plot_num in range(num_sims)]
+    max_SASA=0;ts_scaling=0.02
     for plot_num,ax in enumerate(axes):
         SASA=sasas[sort_keys[plot_num]]
         ts_sasa=np.sum([SASA['base_sasa'][res]['sasa_vals'] for res in SASA['base_sasa']],axis=0)
         name=SASA['name'];activity=labels[plot_num]
-        ts = np.array(range(len(ts_sasa)))
-        #print plot_num,name,ts
+        ts = np.array(range(len(ts_sasa)))*ts_scaling
         ax.plot(ts,ts_sasa,color=color_dict[activity])
         ax.set_title(name)
         ax.tick_params(axis='y',which='both',left='off',right='off',labelleft='on')
         ax.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='on')
-    max_SASA=350#sasas['max_sasa']
-    min_SASA=0#sasas['min_sasa']
+        max_SASA=max(max_SASA,max(ts_sasa))
+
+    min_SASA=0
+    if meta:
+        meta['kcat cut']=kcat_cut
+        meta['max sasa']=max_sasa
+        meta['ts scaling']=ts_scaling
+    else: meta={'kcat cut':kcat_cut,'max sasa':max_SASA,'ts scaling':ts_scaling}
     for plot_num,ax in enumerate(axes):
         ax.set_ylim(min_SASA,max_SASA)
-    plt.show()
+    if plot:
+        plt.show(block=False)
+    else: picturesave('fig.each-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
+
+def one_SASA(SASA,cut_thresh=25,meta=None,plot=True):
+    ax=plt.subplot()
+    for res in SASA['base_sasa']:
+        res_vals=SASA['base_sasa'][res]['sasa_vals']
+        res_type=SASA['base_sasa'][res]['resname']
+        ts = np.array(range(len(res_vals)))
+        max_sasa=max(res_vals)
+        if max_sasa>cut_thresh:
+            ax.plot(ts,res_vals,label="{0}-{1}".format(res_type,res))
+    ax.legend()
+    plt.title(SASA['name'],size='x-large')
+    if meta:
+        meta['cut thresh']=cut_thresh
+        meta['name']=SASA['name']
+    else: meta={'cut thresh':cut_thresh,'name':SASA['name']}
+    if plot:
+        plt.show(block=False)
+    else: picturesave('fig.single-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
+
 
 
 def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_list=None):
@@ -318,6 +346,7 @@ keys=sorted(sasas.keys())
 #combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
 #stats,keys=sasa_stats(sasas)
-each_SASA(sasas,keys)
 #kcat=30;error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title='kcat {0}'.format(kcat),meta={'kcat':kcat},kcat=kcat)
-
+#each_SASA(sasas,keys,plot=False)
+#for key in keys:
+#    one_SASA(sasas[key],plot=False)
