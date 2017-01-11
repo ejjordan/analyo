@@ -45,6 +45,20 @@ def hbonds_timesteps(read_hbonds,hbond_keys,donor_restype=None,acceptor_restype=
     for name in hbonds: hbonds[name]['kcat']=work.meta[name]['kcat']
     return hbonds
 
+def timesteps_discard(hbonds_timesteps,start_time,stop_time,timestep=20):
+    total_time=float(stop_time-start_time)/timestep
+    for sn in hbonds_timesteps:
+        for hbond in hbonds_timesteps[sn]:
+            if hbond=='kcat': continue
+            timesteps=[]
+            for time in hbonds_timesteps[sn][hbond]['times']:
+                if float(time)>start_time and float(time)<stop_time:
+                    timesteps.append(time)
+            occupancy=len(timesteps)/total_time
+            hbonds_timesteps[sn][hbond]['times']=timesteps
+            hbonds_timesteps[sn][hbond]['occupancy']=occupancy
+
+
 def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,
                  divy=False,deltas=False):
     chunk_hbonds={}
@@ -134,8 +148,8 @@ def occupancy_diff(hbonds,reference=None,threshold=0.4):
     bond_list=list(set([label for name in hbonds for label in hbonds[name]]))
     for sn in hbonds:
         if sn==reference: continue
-        altered_donors[sn]={'delta':0, 'name':hbonds[sn]['name'], 'kcat':hbonds[sn]['kcat'],
-                            'kcat':hbonds[sn]['kcat'], 'bonds':[]}
+        altered_donors[sn]={'delta':0, 'name':hbonds[sn]['name'], 'kcat':hbonds[sn]['kcat'], 
+                            'bonds':[]}
         for bond in bond_list:
             if bond=='name' or bond=='kcat': continue
             if bond in hbonds[sn].keys() or bond in hbonds[reference].keys():
@@ -311,6 +325,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, 
                 ylabel='H-bonds occupancy difference', meta=None, kcat_cut=20):
     sorted_names=keys
     avgs=np.array([deltas[name]['delta'] for name in sorted_names])
+    avgs=[avg if avg!=0 else 0.1 for avg in avgs]
     #maxs=np.array([data[name]['max'] for name in sorted_names])
     #mins=np.array([data[name]['min'] for name in sorted_names])
     labels=label_maker(deltas, kcat_cut, name_list=sorted_names)
@@ -439,10 +454,11 @@ if not domains: print "[ERROR] no subdomains found"; exit
 sort_keys=sorted(data.keys())
 hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
 #hbts=hbonds_timesteps(data,sort_keys,donor_reslist=None,acceptor_reslist=None,divy=True)
+timesteps_discard(hbts,start_time=51000,stop_time=101000)
 threshold=0.75
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
-#bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
+bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
 #chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 #var=occupancy_variance(chunks,sort_keys)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
@@ -451,33 +467,7 @@ deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
 hili_res=1284
 #thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 
-kcat=20;metric='ROC';param='kcat'
+kcat=30;metric='ROC';param='kcat'
 title=u'Threshold = {0:1.3f}\tkcat: {1}\nResdiues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
 #parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
 histofusion(deltas,keys,title=title,plot=True,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat})
-
-
-def thresh_plt(thresh=threshold, title=title):
-    deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
-    histofusion(deltas,keys,title=title,plot=True)
-
-def plot_num_bond_scaling(num_bond_scaling=101,bonds=combos,plot=True,xlog=True):
-    num_bonds=[]
-    for thresh in np.linspace(0,1,num_bond_scaling):
-        deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=thresh)
-        try:
-            bond_list=list(set(flatten(np.array([deltas[key]['bonds'] for key in deltas]))))
-        except:
-            import pdb;pdb.set_trace()
-        num_bonds.append([thresh,len(bond_list)])
-    fig, ax = plt.subplots()
-    ax.plot([i[1] for i in num_bonds], [i[0] for i in num_bonds])
-    if xlog:
-        ax.set_xscale('log')
-    ax.invert_yaxis()
-    plt.show()
-    if plot:
-        plt.show(block=False)
-    else:
-        picturesave('fig.num_bond_scaling-%s'%(plotname),work.plotdir,backup=False,
-                    version=True,dpi=200)
