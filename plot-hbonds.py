@@ -32,13 +32,15 @@ def hbonds_timesteps(read_hbonds,hbond_keys,donor_restype=None,acceptor_restype=
         if divy: divies={}
         for hbond in raw_hbonds:
             store_hbond=True
+            donor_residx=int(raw_hbonds[hbond]['donor_residx'])
+            acceptor_residx=int(raw_hbonds[hbond]['acceptor_residx'])
             if donor_restype and raw_hbonds[hbond]['donor_restype'] not in donor_restype:
                 store_hbond=False               
             if acceptor_restype and raw_hbonds[hbond]['acceptor_restype'] not in acceptor_restype:
                 store_hbond=False
-            if donor_reslist and int(raw_hbonds[hbond]['donor_residx']) not in donor_reslist:
+            if donor_reslist and donor_residx not in donor_reslist:
                 store_hbond=False
-            if acceptor_reslist and int(raw_hbonds[hbond]['acceptor_residx']) not in acceptor_reslist:
+            if acceptor_reslist and acceptor_residx not in acceptor_reslist:
                 store_hbond=False
             if store_hbond:
                 hbonds[sn][hbond]=raw_hbonds[hbond]
@@ -58,6 +60,22 @@ def timesteps_discard(hbonds_timesteps,start_time,stop_time,timestep=20):
             hbonds_timesteps[sn][hbond]['times']=timesteps
             hbonds_timesteps[sn][hbond]['occupancy']=occupancy
 
+def intradomain_bonds_discard(hbonds_timesteps,discard_residues,print_bonds=False):
+    trash_bonds={}
+    for sn in hbonds_timesteps:
+        for hbond in hbonds_timesteps[sn]:
+            if hbond=='kcat': continue
+            donor_residx=int(hbonds_timesteps[sn][hbond]['donor_residx'])
+            acceptor_residx=int(hbonds_timesteps[sn][hbond]['acceptor_residx'])
+            if donor_residx in discard_residues and acceptor_residx in discard_residues:
+                trash_bonds[hbond]=1
+    if print_bonds:
+        print trash_bonds.keys()
+    for bond in trash_bonds.keys():
+        for sn in hbonds_timesteps:
+            if bond in hbonds_timesteps[sn].keys():
+                hbonds_timesteps[sn].pop(bond)
+        
 
 def chunk_hbonds(unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,
                  divy=False,deltas=False):
@@ -453,8 +471,10 @@ if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
 hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
-#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=None,acceptor_reslist=None,divy=True)
-timesteps_discard(hbts,start_time=51000,stop_time=101000)
+intradomain_bonds_discard(hbts,domains['$\\alpha$C helix'],print_bonds=False)
+intradomain_bonds_discard(hbts,domains['activation loop'],print_bonds=False)
+#hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['activation loop'],acceptor_reslist=domains['$\\alpha$C helix'],divy=True,reslist_XOR=True)
+#timesteps_discard(hbts,start_time=51000,stop_time=101000)
 threshold=0.75
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
@@ -468,6 +488,6 @@ hili_res=1284
 #thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 
 kcat=30;metric='ROC';param='kcat'
-title=u'Threshold = {0:1.3f}\tkcat: {1}\nResdiues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
+title=u'Threshold = {0:1.3f}\tkcat: {1}\nResdiues: {2}\nintradomain bonds excluded'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
 #parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
-histofusion(deltas,keys,title=title,plot=True,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat})
+histofusion(deltas,keys,title=title,plot=False,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'yes'})
