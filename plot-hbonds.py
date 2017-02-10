@@ -340,10 +340,10 @@ def label_maker(deltas, kcat_cut=33, name_list=None):
     return labels
 
 def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, y_limits=False,
-                ylabel='H-bonds occupancy difference', meta=None, kcat_cut=20):
+                ylabel='H-bonds occupancy difference', meta=None, kcat_cut=20,zero=False):
     sorted_names=keys
     avgs=np.array([deltas[name]['delta'] for name in sorted_names])
-    avgs=[avg if avg!=0 else 0.1 for avg in avgs]
+    if zero: avgs=[avg if avg!=0 else 0.1 for avg in avgs]
     #maxs=np.array([data[name]['max'] for name in sorted_names])
     #mins=np.array([data[name]['min'] for name in sorted_names])
     labels=label_maker(deltas, kcat_cut, name_list=sorted_names)
@@ -471,8 +471,8 @@ if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
 hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
-intradomain_bonds_discard(hbts,domains['$\\alpha$C helix'],print_bonds=False)
-intradomain_bonds_discard(hbts,domains['activation loop'],print_bonds=False)
+#intradomain_bonds_discard(hbts,domains['$\\alpha$C helix'],print_bonds=False)
+#intradomain_bonds_discard(hbts,domains['activation loop'],print_bonds=False)
 #hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['activation loop'],acceptor_reslist=domains['$\\alpha$C helix'],divy=True,reslist_XOR=True)
 #timesteps_discard(hbts,start_time=51000,stop_time=101000)
 threshold=0.75
@@ -488,6 +488,6 @@ hili_res=1284
 #thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 
 kcat=30;metric='ROC';param='kcat'
-title=u'Threshold = {0:1.3f}\tkcat: {1}\nResdiues: {2}\nintradomain bonds excluded'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
+title=u'Threshold = {0:1.3f}\tkcat: {1}\nResidues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
 #parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
-histofusion(deltas,keys,title=title,plot=False,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'yes'})
+histofusion(deltas,keys,title=title,plot=False,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'no'})
