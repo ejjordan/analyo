@@ -333,7 +333,7 @@ def label_maker(deltas, kcat_cut=33, name_list=None):
     for kcat in kcats:
         if kcat=='X': labels.append('maybe')
         elif kcat=='WT': labels.append('wt')
-        elif float(kcat)>kcat_cut:
+        elif float(kcat)>=kcat_cut:
             labels.append(True)
         else:
             labels.append(False)
@@ -343,9 +343,9 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, 
                 ylabel='H-bonds occupancy difference', meta=None, kcat_cut=20,zero=False):
     sorted_names=keys
     avgs=np.array([deltas[name]['delta'] for name in sorted_names])
-    if zero: avgs=[avg if avg!=0 else 0.1 for avg in avgs]
-    #maxs=np.array([data[name]['max'] for name in sorted_names])
-    #mins=np.array([data[name]['min'] for name in sorted_names])
+    if zero: 
+        pos_avgs=[avg if avg!=0 else 0.1 for avg in avgs]
+        neg_avgs=[avg if avg!=0 else -0.1 for avg in avgs]
     labels=label_maker(deltas, kcat_cut, name_list=sorted_names)
     mutations=[deltas[name]['name'] for name in sorted_names]
     fig, ax = plt.subplots()
@@ -353,10 +353,10 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, 
     width=0.8
     color_list=[color_dict[i] for i in labels]
     label_list=[label_dict[i] for i in labels]
-    alpha=0.6
-    bar = ax.bar(x_ticks-width/2, avgs, width, color=color_list, alpha=alpha)
-    #ax.scatter(x_ticks, mins, 40, color='k', marker='*')
-    #ax.scatter(x_ticks, maxs, 40, color='k', marker='*')
+    bar = ax.bar(x_ticks-width/2, avgs, width, color=color_list)
+    if zero:
+        bar = ax.bar(x_ticks-width/2, pos_avgs, width, color=color_list)
+        bar = ax.bar(x_ticks-width/2, neg_avgs, width, color=color_list)
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='large')
     ax.set_xlim(-1,len(avgs))
@@ -367,10 +367,10 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, out_file=None, 
     plt.grid(axis='y')
     
     patches={
-        True:mpatches.Patch(color=color_dict[True], label='activating', alpha=alpha),
-        False:mpatches.Patch(color=color_dict[False], label='non-activating', alpha=alpha),
-        'wt':mpatches.Patch(color=color_dict['wt'], label='wild type', alpha=alpha),
-        'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown', alpha=alpha)}    
+        True:mpatches.Patch(color=color_dict[True], label='activating'),
+        False:mpatches.Patch(color=color_dict[False], label='non-activating'),
+        'wt':mpatches.Patch(color=color_dict['wt'], label='wild type'),
+        'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown')}    
     used_patch=[patches[label] for label in set(labels)]
     used_label=[label_dict[label] for label in set(labels)]
     ax.legend(used_patch,used_label)
@@ -487,7 +487,7 @@ bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
 hili_res=1284
 #thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
 
-kcat=30;metric='ROC';param='kcat'
-title=u'Threshold = {0:1.3f}\tkcat: {1}\nResidues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
+kcat=3;metric='ROC';param='kcat'
+title=u'Threshold = {0:1.3f}\tkcat: {1}x\nResidues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
 #parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
-histofusion(deltas,keys,title=title,plot=False,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'no'})
+histofusion(deltas,keys,title=title,plot=True,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'no'},zero=True)
