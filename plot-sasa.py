@@ -8,7 +8,7 @@ from common_plot import *
 import matplotlib.gridspec as gridspec
 import numpy as np
 import matplotlib.patches as mpatches
-import re
+import re,math
 
 #---settings
 plotname = 'sasa'
@@ -313,7 +313,7 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title
         plt.title(title,size='x-large')
     ax.legend(used_patch,used_label)
     for ax in axes: 
-	ax.set_ylabel(r'SASA (A.U.)')
+	ax.set_ylabel('SASA (\AA$^2$)')
     if plot:
         fig.show()
     else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
@@ -332,21 +332,22 @@ def label_maker(sasas, kcat_cut=33, name_list=None):
     for kcat in kcats:
         if kcat=='X': labels.append('maybe')
         elif kcat=='WT': labels.append('wt')
-        elif float(kcat)>kcat_cut:
+        elif float(kcat)>=kcat_cut:
             labels.append(True)
         else:
             labels.append(False)
     return labels
 
 
-res_list=hydrophobic_core[protein]
+res_list=Rspine[protein]
 sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=res_list)
 combos=combine_replicates(sasas)
 keys=sorted(sasas.keys())
 #combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
 stats,keys=sasa_stats(combos)
-#kcat=30;error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title='kcat {0}'.format(kcat),meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
+kcat=3;title='kcat {0}x\n{1}'.format(kcat,'regulatory spine')
+error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True,title=title,meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
 #each_SASA(sasas,keys,plot=False)
 #for key in keys:
 #    one_SASA(sasas[key],plot=False)
