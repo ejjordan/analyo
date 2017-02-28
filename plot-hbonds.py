@@ -252,12 +252,13 @@ def stat_plotter(var,threshold_label='std',threshold=0.2):
     plt.show(block=False)
 
 
-"""
+
 def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None,residue_to_highlight=None):
     labels=[];label_colors=[];label_marks=[];values=[];means=[];stds=[]
     for sn in thresh:
         for bond in thresh[sn]:
             if bond=='name' or bond=='kcat': continue
+            """
             if stats:
                 labels.append(thresh[sn]['name']+' '+bond)
                 means.append(thresh[sn][bond]['mean'])
@@ -283,6 +284,21 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
                     else: values.append(0)
                     labels.append(' '.join(sn.split('_'))+' '+bond+' '+str(chunk+1))
                     label_colors.append(thresh[sn]['active'])
+            """
+            for chunk in range(chunks):
+                chunk+=1
+                if bond in thresh[sn] and chunk in thresh[sn][bond]['times'] and abs(thresh[sn][bond]['deltas'][chunk])>plot_threshold:
+                    values.append(thresh[sn][bond]['deltas'][chunk])
+                    mark='black'
+                    if residue_to_highlight:
+                        bond_data=bond.split()
+                        if str(residue_to_highlight) in bond_data:
+                            mark='red'
+                    labels.append(' '.join(sn.split('_'))+', '+bond)
+                    label_marks.append(mark)
+                    label_colors.append(thresh[sn]['kcat'])
+
+    label_colors=label_maker(label_colors,val_type='kcat')
     fig, ax = plt.subplots(figsize=(18,14))
     x_ticks = np.arange(len(labels))
     width=1
@@ -297,6 +313,7 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
         bar = ax.bar(x_ticks+width, values, color=color_list, alpha=alpha)
     ax.set_xticks(x_ticks+1.5*width)
     ax.set_xticklabels(labels, rotation='vertical', ha='center',size='large')
+    plt.ylabel('Change in H-bond occupancy',size='x-large')
     plt.subplots_adjust(bottom=0.4)
     if residue_to_highlight:
         [label_text.set_color(label_marks[i]) for i,label_text in enumerate(plt.gca().get_xticklabels())]
@@ -310,16 +327,15 @@ def thresh_plotter(thresh,stats=False,deltas=False,chunks=10,plot=True,title=Non
         'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown', alpha=alpha)}    
     used_patch=[patches[label] for label in set(label_colors)]
     used_label=[label_dict[label] for label in set(label_colors)]
-    #ax.legend(used_patch,used_label)
     ax.legend(used_patch,used_label, loc=8, ncol=3)
     if plot:
         plt.show(block=False)
     else:
         picturesave('fig.delta_bonds-%s'%(plotname),work.plotdir,backup=False,
                     version=True,meta=meta,dpi=200)
-"""
 
-def label_maker(deltas, kcat_cut=33, name_list=None):
+
+def label_maker(values, kcat_cut=3, name_list=None,val_type='deltas'):
 
     """
     This function takes a 'delta' object and a kcat cut-off and returns activation (or 
@@ -328,7 +344,8 @@ def label_maker(deltas, kcat_cut=33, name_list=None):
     """
     
     if not name_list: name_list=[deltas[sn]['name'] for sn in deltas]
-    kcats=[deltas[name]['kcat'] for name in name_list]
+    if val_type=='deltas': kcats=[deltas[name]['kcat'] for name in name_list]
+    else: kcats=values
     labels=[]
     for kcat in kcats:
         if kcat=='X': labels.append('maybe')
@@ -484,8 +501,8 @@ bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
 #thresh=occupancy_thresholder(chunks,threshold=best_thresh)
 #thresh_plotter(chunks,stats=False,chunks=1,deltas=True)
-hili_res=1284
-#thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=True,plot_threshold=0.4,title='Significantly altered H-bonds',meta={'occupancy_diff threshold':threshold,'plot threshold':0.4,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=hili_res)
+hili_res=868;plot_thresh=0.3
+#thresh_plotter(chunks,stats=False,chunks=2,deltas=True,plot=False,plot_threshold=plot_thresh,title='$>${0} $\%$ occupancy change H-bonds'.format(plot_thresh*100),meta={'occupancy_diff threshold':threshold,'plot threshold':plot_thresh,'bond_list':bond_list,'highlighted_residue':hili_res},residue_to_highlight=None)
 
 kcat=3;metric='ROC';param='kcat'
 title=u'Threshold = {0:1.3f}\tkcat: {1}x\nResidues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
