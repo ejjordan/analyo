@@ -8,6 +8,7 @@ hydrophobic_core={'alk':[1096,1098,1170,1171,1174,1179,1239,1245,1271,1240],
                   'braf':[504,505,513,566,567,572,595],
                   'her2':[773,774,777,782,835,836,841,864]}
 Rspine={'braf':[505,516,574,595],
+        'alk':[1171,1182,1247,1271],
         'her2':[774,785,843,864]}
 hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
 label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
