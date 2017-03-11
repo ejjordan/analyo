@@ -36,6 +36,10 @@ def plot_rmsd(rmsd,sim_name,avg_window=20,store=True):
 	fig, ax_array = plt.subplots(2,2,figsize=(12,10))
 	act_rmsd=rmsd_data['CA_act'][:,3]
 	inact_rmsd=rmsd_data['CA_inact'][:,3]
+        cov_mat=np.cov(act_rmsd,inact_rmsd)
+        act_variance=cov_mat[0][0]
+        inact_variance=cov_mat[1][1]
+        act_inact_covariance=cov_mat[0][1]
 	act_time=rmsd_data['CA_act'][:,1]/1000 #put in ns
 	inact_time=rmsd_data['CA_inact'][:,1]/1000
 	ax_array[0,0].set_xlim(act_time[0],act_time[-1])
@@ -43,16 +47,23 @@ def plot_rmsd(rmsd,sim_name,avg_window=20,store=True):
 	inact_time=inact_time[avg_window-1:]
 	act_rmsd=running_mean(act_rmsd,avg_window)
 	inact_rmsd=running_mean(inact_rmsd,avg_window)
-	ax_array[0,0].plot(act_time, act_rmsd, 'g', label="RMSD to active")
-	ax_array[0,0].plot(inact_time, inact_rmsd, 'r', label="RMSD to inactive")
+        act_label="RMSD to active\nvariance {0:.2f}".format(act_variance)
+        inact_label="RMSD to inactive\nvariance {0:.2f}".format(inact_variance)
+        title_label="all residues\ncovariance {0:.2f}".format(act_inact_covariance)
+	ax_array[0,0].plot(act_time, act_rmsd, 'g', label=act_label)
+	ax_array[0,0].plot(inact_time, inact_rmsd, 'r', label=inact_label)
 	ax_array[0,0].legend(loc='best')
 	ax_array[0,0].grid(axis='y')
 	ax_array[0,0].set_xlabel("Time (ns)")
 	ax_array[0,0].set_ylabel("RMSD $\mathrm{(\\AA)}$")
-	ax_array[0,0].set_title("all residues")
+	ax_array[0,0].set_title(title_label)
 
 	act_rmsd=rmsd_data['ach_act'][:,3]
 	inact_rmsd=rmsd_data['ach_inact'][:,3]
+        cov_mat=np.cov(act_rmsd,inact_rmsd)
+        act_variance=cov_mat[0][0]
+        inact_variance=cov_mat[1][1]
+        act_inact_covariance=cov_mat[0][1]
 	act_time=rmsd_data['ach_act'][:,1]/1000 #put in ns
 	inact_time=rmsd_data['ach_inact'][:,1]/1000
 	ax_array[0,1].set_xlim(act_time[0],act_time[-1])
@@ -60,16 +71,23 @@ def plot_rmsd(rmsd,sim_name,avg_window=20,store=True):
 	inact_time=inact_time[avg_window-1:]
 	act_rmsd=running_mean(act_rmsd,avg_window)
 	inact_rmsd=running_mean(inact_rmsd,avg_window)
-	ax_array[0,1].plot(act_time,act_rmsd, 'g', label="RMSD to active")
-	ax_array[0,1].plot(inact_time,inact_rmsd, 'r', label="RMSD to inactive")
+        act_label="RMSD to active\nvariance {0:.2f}".format(act_variance)
+        inact_label="RMSD to inactive\nvariance {0:.2f}".format(inact_variance)
+        title_label="$\\alpha$C helix\ncovariance {0:.2f}".format(act_inact_covariance)
+	ax_array[0,1].plot(act_time, act_rmsd, 'g', label=act_label)
+	ax_array[0,1].plot(inact_time, inact_rmsd, 'r', label=inact_label)
 	ax_array[0,1].legend(loc='best')
 	ax_array[0,1].grid(axis='y')
 	ax_array[0,1].set_xlabel("Time (ns)")
 	ax_array[0,1].set_ylabel("RMSD $\mathrm{(\\AA)}$")
-	ax_array[0,1].set_title("$\\alpha$C helix")
+	ax_array[0,1].set_title(title_label)
 
 	act_rmsd=rmsd_data['aloop_act'][:,3]
 	inact_rmsd=rmsd_data['aloop_inact'][:,3]
+        cov_mat=np.cov(act_rmsd,inact_rmsd)
+        act_variance=cov_mat[0][0]
+        inact_variance=cov_mat[1][1]
+        act_inact_covariance=cov_mat[0][1]
 	act_time=rmsd_data['aloop_act'][:,1]/1000 #put in ns
 	inact_time=rmsd_data['aloop_inact'][:,1]/1000
 	ax_array[1,0].set_xlim(act_time[0],act_time[-1])
@@ -77,16 +95,23 @@ def plot_rmsd(rmsd,sim_name,avg_window=20,store=True):
 	inact_time=inact_time[avg_window-1:]
 	act_rmsd=running_mean(act_rmsd,avg_window)
 	inact_rmsd=running_mean(inact_rmsd,avg_window)
-	ax_array[1,0].plot(act_time,act_rmsd, 'g', label="RMSD to active")
-	ax_array[1,0].plot(inact_time,inact_rmsd, 'r', label="RMSD to inactive")
+        act_label="RMSD to active\nvariance {0:.2f}".format(act_variance)
+        inact_label="RMSD to inactive\nvariance {0:.2f}".format(inact_variance)
+        title_label="activation loop\ncovariance {0:.2f}".format(act_inact_covariance)
+	ax_array[1,0].plot(act_time, act_rmsd, 'g', label=act_label)
+	ax_array[1,0].plot(inact_time, inact_rmsd, 'r', label=inact_label)
 	ax_array[1,0].legend(loc='best')
 	ax_array[1,0].grid(axis='y')
 	ax_array[1,0].set_xlabel("Time (ns)")
 	ax_array[1,0].set_ylabel("RMSD $\mathrm{(\\AA)}$")
-	ax_array[1,0].set_title("activation loop")
+	ax_array[1,0].set_title(title_label)
 
 	act_rmsd=rmsd_data['ach_aloop_act'][:,3]
 	inact_rmsd=rmsd_data['ach_aloop_inact'][:,3]
+        cov_mat=np.cov(act_rmsd,inact_rmsd)
+        act_variance=cov_mat[0][0]
+        inact_variance=cov_mat[1][1]
+        act_inact_covariance=cov_mat[0][1]
 	act_time=rmsd_data['ach_aloop_act'][:,1]/1000 #put in ns
 	inact_time=rmsd_data['ach_aloop_inact'][:,1]/1000
 	ax_array[1,1].set_xlim(act_time[0],act_time[-1])
@@ -94,13 +119,18 @@ def plot_rmsd(rmsd,sim_name,avg_window=20,store=True):
 	inact_time=inact_time[avg_window-1:]
 	act_rmsd=running_mean(act_rmsd,avg_window)
 	inact_rmsd=running_mean(inact_rmsd,avg_window)
-	ax_array[1,1].plot(act_time,act_rmsd, 'g', label="RMSD to active")
-	ax_array[1,1].plot(inact_time,inact_rmsd, 'r', label="RMSD to inactive")
+        act_label="RMSD to active\nvariance {0:.2f}".format(act_variance)
+        inact_label="RMSD to inactive\nvariance {0:.2f}".format(inact_variance)
+        title_label="$\\alpha$C helix & activation loop\ncovariance {0:.2f}".format(
+            act_inact_covariance)
+	ax_array[1,1].plot(act_time, act_rmsd, 'g', label=act_label)
+	ax_array[1,1].plot(inact_time, inact_rmsd, 'r', label=inact_label)
 	ax_array[1,1].legend(loc='best')
 	ax_array[1,1].grid(axis='y')
 	ax_array[1,1].set_xlabel("Time (ns)")
 	ax_array[1,1].set_ylabel("RMSD $\mathrm{(\\AA)}$")
-	ax_array[1,1].set_title("$\\alpha$C helix & activation loop")
+	ax_array[1,1].set_title(title_label)
+
 
 	plt.suptitle(title,size='large')
 	plt.tight_layout(rect=[0, 0, 1, 0.99])
@@ -114,6 +144,7 @@ def plot_rmsd(rmsd,sim_name,avg_window=20,store=True):
 for key in data.keys():
     rmsd_data=data[key]['data']
     plot_rmsd(rmsd_data,key,store=True)
+
     """
     A_ca=rmsd_data['CA_act'][:,3]
     I_ca=rmsd_data['CA_inact'][:,3]
