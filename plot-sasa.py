@@ -1,9 +1,6 @@
-#!/usr/bin/python -i
+#!/usr/bin/env python
 
 #---plot prep
-execfile('./omni/base/header.py')
-from plotter import *
-from base.store import plotload
 from common_plot import *
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -21,7 +18,8 @@ colormap = lambda i,n,name='jet': mpl.cm.__dict__[name](float(i)/n)
 data,calc = plotload(plotname,work)
 sasa_type='abs_sasa'
 
-protein=work.c
+
+protein='alk'#work.c
 domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
@@ -131,10 +129,6 @@ def sasa_stats(SASAs):
         #!!!need to do something with comp_sasa
         SASA_stats[sn]['mean']=np.sum(SASA_stats[sn]['means'])
         SASA_stats[sn]['std']=np.sum(SASA_stats[sn]['stds'])
-    #max_=max([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
-    #min_=min([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
-    #SASA_stats['max_sasa']=max_
-    #SASA_stats['min_sasa']=min_
     means=[[k,v['mean']] for k,v in SASA_stats.items()]
     sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
     return SASA_stats,sorted_keys
@@ -227,7 +221,7 @@ def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-	figsize=(12,8))
+    figsize=(12,8))
 
     color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
     sort_keys=sorted(data.keys())
@@ -240,34 +234,33 @@ def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_
     min_SASA=sasas['min_sasa']
     SASA_bins = np.arange(min_SASA,max_SASA,(max_SASA-min_SASA)/100)
     for snum,sn in enumerate(sort_keys):
-	#---unpack
+    #---unpack
         SASAs=sasas[sn]['sums'];name=sasas[sn]['name'];activity=sasas[sn]['active']
-	color = color_dict[activity]
-	ts = np.array(range(len(SASAs)))
-	ts -= ts.min()
-	#---histograms
-	ax = axes[0]
-	counts,bins = np.histogram(SASAs,bins=SASA_bins,normed=True)
-	ax.fill_betweenx((bins[1:]+bins[:-1])/2.,counter,counter+counts,alpha=1.0,
+    color = color_dict[activity]
+    ts = np.array(range(len(SASAs)))
+    ts -= ts.min()
+    #---histograms
+    ax = axes[0]
+    counts,bins = np.histogram(SASAs,bins=SASA_bins,normed=True)
+    ax.fill_betweenx((bins[1:]+bins[:-1])/2.,counter,counter+counts,alpha=1.0,
                          color=color,lw=0)
-	max_SASA = max([max_SASA,max(SASAs)])
-	#---compute drift
-	m,b = np.polyfit(ts[len(SASAs)/10:],SASAs[len(SASAs)/10:],1)
-	drift = m*(ts[-1]-ts[len(SASAs)/10])
-	drift_start = ts[len(SASAs)/10]*m+b
-	#---drift arrows
-	ax.arrow(counter,drift_start,0,drift,
-                 head_width=max(counts)*0.1,head_length=max_SASA*0.05,fc=color,ec='w',lw=1.5,
-                 path_effects=[path_effects.Stroke(linewidth=4,foreground=color),
-                               path_effects.Normal()],zorder=3)
-	xpos.append(counter)
-	counter += max(counts)*1.1
-	if snum == 0: xlim_left = -1*max(counts)*0.1
+    max_SASA = max([max_SASA,max(SASAs)])
+    #---compute drift
+    m,b = np.polyfit(ts[len(SASAs)/10:],SASAs[len(SASAs)/10:],1)
+    drift = m*(ts[-1]-ts[len(SASAs)/10])
+    drift_start = ts[len(SASAs)/10]*m+b
+    #---drift arrows
+    ax.arrow(counter,drift_start,0,drift,
+             head_width=max(counts)*0.1,head_length=max_SASA*0.05,fc=color,ec='w',lw=1.5,
+             path_effects=[path_effects.Stroke(linewidth=4,foreground=color),
+                           path_effects.Normal()],zorder=3)
+    xpos.append(counter)
+    counter += max(counts)*1.1
+    if snum == 0: xlim_left = -1*max(counts)*0.1
     ax.set_xticks(xpos)
     ax.set_xticklabels([sasas[sn]['name'] for sn in sort_keys],rotation=45,ha='right')
     ax.set_xlim(xlim_left,counter)
-    for ax in axes: 
-	ax.set_ylabel(r'relative SASA (A.U.)')
+    ax.set_ylabel(r'relative SASA (A.U.)')
     fig.show()
     #picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
@@ -276,7 +269,7 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-	figsize=(12,8))
+    figsize=(12,8))
 
     sasas=data
     if not sort_keys: sort_keys=data.keys()
@@ -285,19 +278,21 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title
     counter,xpos,xlim_left = 0,[],0
     #labels=[sasas[name]['active'] for name in sort_keys]
     labels=label_maker(sasas,kcat_cut=kcat,name_list=sort_keys)
-    #import pdb;pdb.set_trace()
+    #---unpack
     for snum,sn in enumerate(sort_keys):
-	#---unpack
-        mean=sasas[sn]['mean'];std=sasas[sn]['std']
-        name=sasas[sn]['name'];activity=labels[snum]
+        mean=sasas[sn]['mean']
+        std=sasas[sn]['std']
+        name=sasas[sn]['name']
+        activity=labels[snum]
         kcat=sasas[sn]['kcat']
-	color = color_dict[activity]
-	#---boxes
-	ax = axes[0]
-        ax.errorbar(x=counter,y=mean,yerr=std,color=color,elinewidth=4,capthick=4,
+        color = color_dict[activity]
+        #---boxes
+        ax = axes[0]
+        ax.errorbar(x=counter,y=mean,yerr=std,ecolor=color,elinewidth=4,capthick=4,
                     capsize=6,fmt='ko')
-	xpos.append(counter)
+        xpos.append(counter)
         counter+=1
+
     ax.set_xticks(xpos)
     ax.set_xticklabels([sasas[sn]['name'] for sn in sort_keys],rotation=45,ha='right')
     ax.set_xlim(xlim_left-1,counter)
@@ -312,8 +307,7 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title
     if title!=None:
         plt.title(title,size='x-large')
     ax.legend(used_patch,used_label)
-    for ax in axes: 
-	ax.set_ylabel('SASA (\AA$^2$)')
+    ax.set_ylabel('SASA (\AA$^2$)')
     if plot:
         fig.show()
     else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
@@ -346,8 +340,8 @@ keys=sorted(sasas.keys())
 #combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
 stats,keys=sasa_stats(combos)
-kcat=3;title='kcat {0}x\n{1}'.format(kcat,'regulatory spine')
-error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True,title=title,meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
+kcat=30;title='kcat {0}x\n{1}'.format(kcat,'regulatory spine')
+error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title=title,meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
 #each_SASA(sasas,keys,plot=False)
 #for key in keys:
 #    one_SASA(sasas[key],plot=False)

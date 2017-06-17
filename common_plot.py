@@ -1,4 +1,6 @@
-#!/usr/bin/python -i
+#!/usr/bin/env python
+
+import os
 
 hydrophobic=['PHE','TYR','ILE','LEU','VAL','TRP']
 polar=['ARG','LYS','GLU','ASP','HIS','SER','THR','ASN','GLN']
@@ -14,7 +16,7 @@ hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
 label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
 color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
 
-def get_subdomains(protein,domainfile='calcs/kinase_subdomains'):
+def get_subdomains(protein,domainfile=os.path.abspath('kinase_subdomains')):
     with open(domainfile,'r') as fp: domain_lines=fp.readlines(); fp.close()
     for line in domain_lines:
         line.strip('\n')

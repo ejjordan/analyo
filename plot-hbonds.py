@@ -1,10 +1,6 @@
-#!/usr/bin/python -i
-#-*- coding: utf-8 -*-
+#!/usr/bin/env python
 
 #---plot prep
-execfile('./omni/base/header.py')
-from plotter import *
-from base.store import plotload
 from common_plot import *
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -481,7 +477,7 @@ def parameter_sweep1D(in_data, reference='inactive_wt', limits=[0,1,6], title=No
 
 
 #finalize the data and call the plotter
-protein=work.c
+protein='alk'
 domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
@@ -495,7 +491,8 @@ hbts=hbonds_timesteps(data,sort_keys,donor_reslist=domains['$\\alpha$C helix, ac
 threshold=0.75
 combos=combine_hbonds(hbts,sort_keys,divy=True,num_replicates=2)
 deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
-bond_list=list(set(flatten([deltas[key]['bonds'] for key in deltas])))
+bond_list=[item for sublist in [deltas[key]['bonds'] for key in deltas] for item in sublist]
+bond_list=list(set(bond_list))
 #chunks=chunk_hbonds(hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 #var=occupancy_variance(chunks,sort_keys)
 #tstats=occupancy_stats_thresholder(var,threshold_label='std',threshold=0.35)
@@ -507,4 +504,4 @@ hili_res=868;plot_thresh=0.3
 kcat=3;metric='ROC';param='kcat'
 title=u'Threshold = {0:1.3f}\tkcat: {1}x\nResidues: {2}'.format(threshold,kcat,'$\\alpha$C helix, activation loop')
 #parameter_sweep1D(combos, limits=[10,40,4],title='{0} sweep\nthreshold={1}'.format(param,threshold),meta={'parameter':param,'metric':metric,'alt_param':{'threshold':threshold}},alt_param=threshold,parameter=param,plot=False)
-histofusion(deltas,keys,title=title,plot=True,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'no'},zero=True)
+histofusion(deltas,keys,title=title,plot=False,kcat_cut=kcat,meta={'occupancy_diff threshold':threshold,'donor_residues':'$\\alpha$C helix, activation loop','acceptor_residues':'$\\alpha$C helix, activation loop','kcat':kcat,'intradomain bonds excluded':'no'},zero=True)
