@@ -5,6 +5,7 @@ execfile('./omni/base/header.py')
 from plotter import *
 from base.store import plotload
 from common_plot import *
+from common_sasa import *
 import matplotlib.gridspec as gridspec
 import numpy as np
 import matplotlib.patches as mpatches
@@ -19,87 +20,11 @@ colormap = lambda i,n,name='jet': mpl.cm.__dict__[name](float(i)/n)
 
 #---load the upstream data
 data,calc = plotload(plotname,work)
-sasa_type='abs_sasa'
 
 protein=work.c
 domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
-def filter_sasas(SASA_keys,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_list=None):
-
-    """
-    This function unpacks the data from a sasa file according to use specifications.
-    """
-
-    SASAs={}
-    for sn in SASA_keys:
-        raw_sasa=zip(data[sn]['data']['resname'],data[sn]['data']['resid'],
-                       data[sn]['data'][sasa_type])
-        SASAs[sn]={'name':' '.join(sn.split('_')), 'kcat':work.meta[sn]['kcat'],
-                   'base_sasa':{}}
-        if comp_restype: SASAs[sn]['comp_sasa']={}
-        if type(res_list)!=list: 
-            res_list=data[sn]['data']['resid']
-            SASA_sums=np.sum([i[2] for i in raw_sasa if i[1] in res_list],axis=0)
-        else:
-            base_sasa=[];comp_sasa=[];SASA_sums=[]
-            for elt in raw_sasa:
-                resname=elt[0];resid=elt[1];sasa=elt[2]
-                if resid in res_list:
-                    if base_restype and resname in base_restype:
-                        SASAs[sn]['base_sasa'][resid]={'resid':resid, 'resname':resname,
-                                                         'sasa_vals': sasa}
-                    if comp_restype and resname in comp_restype:
-                        SASAs[sn]['comp_sasa'][resid]={'resid':resid, 'resname':resname,
-                                                       'sasa_vals': sasa}
-                    if not base_restype:                        
-                        SASA_sums.append(sasa)
-                        SASAs[sn]['base_sasa'][resid]={'resid':resid, 'resname':resname,
-                                                         'sasa_vals': sasa}
-    return SASAs
-
-def combine_replicates(unpacked_SASAs):
-
-    """
-    This function will combine SASA values from replicate simulations. The names of the keys
-    in the incoming unpacked_SASAs dict must contain the string 'active_wt', 'inactive_wt',
-    or the mutation code in the format (from_AA)(residue_num)(to_AA). It will give a warning
-    (but not an error!) if not all names have the same number of replicates.
-    """
-
-    sns=unpacked_SASAs.keys()
-    unique_keys={}
-    search_string='(\w\d{1,5}\w|active_wt|inactive_wt)'
-    for sn in sns:
-        name=re.search(search_string,sn).groups()[0]
-        if name in unique_keys.keys(): unique_keys[name]+=1
-        else:  unique_keys[name]=1
-    combined_SASAs={}
-    if not all([val==unique_keys.values()[0] for val in unique_keys.values()]):
-        print "[warning] not all SASA replicates have same number of replicates"
-    for name in unique_keys.keys():
-        for key,val in unpacked_SASAs.items():
-            if re.search("\b{0}".format(name),"\b{0}".format(key)):
-                if name in combined_SASAs.keys():
-                    for resid1 in val['base_sasa'].keys():
-                        for resid2 in combined_SASAs[name]['base_sasa'].keys():
-                            if resid1==resid2:
-                                combined_SASAs[name]['base_sasa'][resid2][
-                                    'sasa_vals']=np.append(val['base_sasa'][
-                                        resid1]['sasa_vals'],combined_SASAs[
-                                            name]['base_sasa'][resid2]['sasa_vals'])
-                    if 'comp_sasa' in combined_SASAs[name].keys():
-                        for resid1 in val['comp_sasa'].keys():
-                            for resid2 in combined_SASAs[name]['comp_sasa'].keys():
-                                if resid1==resid2:
-                                    combined_SASAs[name]['comp_sasa'][resid2][
-                                        'sasa_vals']=np.append(
-                                            val['comp_sasa'][resid1]['sasa_vals'],
-                                            combined_SASAs[name]['comp_sasa'][resid2]['sasa_vals'])
-                else: 
-                    combined_SASAs[name]=val
-                    combined_SASAs[name]['name']=name
-    return combined_SASAs
 
 def chunk_sasa(unpacked_SASAs,chunk_length=500,sasa_length=5001):
     chunked_SASAs={}
@@ -119,52 +44,6 @@ def chunk_sasa(unpacked_SASAs,chunk_length=500,sasa_length=5001):
                     chunked_SASAs[chunk_name]['comp_sasa'][resid]={'sasa_vals':chunk,'resid':resid,
                                                                    'resname':resinfo['resname']}
     return chunked_SASAs
-
-
-def sasa_stats(SASAs):
-    SASA_stats={}
-    for sn,info in SASAs.items():
-        SASA_stats[sn]={'name':' '.join(info['name'].split('_')), 'kcat':info['kcat']}
-        SASA_stats[sn]['means']=[np.mean(val['sasa_vals']) for val in info['base_sasa'].values()]
-        SASA_stats[sn]['stds']=[np.std(val['sasa_vals']) for val in info['base_sasa'].values()]
-        SASA_stats[sn]['median']=[np.median(val['sasa_vals']) for val in info['base_sasa'].values()]
-        #!!!need to do something with comp_sasa
-        SASA_stats[sn]['mean']=np.sum(SASA_stats[sn]['means'])
-        SASA_stats[sn]['std']=np.sum(SASA_stats[sn]['stds'])
-    #max_=max([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
-    #min_=min([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
-    #SASA_stats['max_sasa']=max_
-    #SASA_stats['min_sasa']=min_
-    means=[[k,v['mean']] for k,v in SASA_stats.items()]
-    sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
-    return SASA_stats,sorted_keys
-
-def combine_SASAs(unpacked_SASAs,sorted_keys,num_replicates=2):
-    # this will only work with a sorted list of keys that contain num_replicate number of 
-    # replicates sequentially
-    if len(sorted_keys)%num_replicates!=0:
-        print "[Error] number of keys is not a multiple of number of replicates; returning."
-        return
-    combined_SASAs={}
-    for i in range(len(sorted_keys)/num_replicates):
-        sums=[];key_list=[]
-        for j in range(num_replicates):
-            name=sorted_keys.pop(0)
-            key_list.append(name)
-            sums.append(unpacked_SASAs[name]['sums'])
-        name=min(key_list,key=len)
-        sums=np.array(sums)
-        sums=np.concatenate(sums)
-        active=unpacked_SASAs[name]['active']
-        combined_SASAs[name]={'name':' '.join(name.split('_')), 'sums':sums, 'mean':np.mean(sums),
-                              'std':np.std(sums), 'median':np.median(sums),
-                              'min':min(sums), 'max':max(sums), 'active':active}
-    means=[[k,v['mean']] for k,v in combined_SASAs.items()]
-    new_sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
-    combined_SASAs['max_sasa']=unpacked_SASAs['max_sasa']
-    combined_SASAs['min_sasa']=unpacked_SASAs['min_sasa']
-    
-    return combined_SASAs,new_sorted_keys
     
 
 def each_SASA(sasas,sort_keys,kcat_cut=30,plot=True,meta=None):
@@ -223,7 +102,7 @@ def one_SASA(SASA,cut_thresh=25,meta=None,plot=True):
 
 
 
-def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_list=None):
+def stack_SASA(data,sasa_type='abs_sasa',base_restype=None,comp_restype=None,res_list=None):
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
@@ -272,7 +151,7 @@ def stack_SASA(data,sasa_type=sasa_type,base_restype=None,comp_restype=None,res_
     #picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
 
-def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title=None,kcat=30):
+def error_SASA(data,sort_keys=None,sasa_type='abs_sasa',plot=True,meta=None,title=None,kcat=30):
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
@@ -283,9 +162,7 @@ def error_SASA(data,sort_keys=None,sasa_type=sasa_type,plot=True,meta=None,title
 
     #---PLOT
     counter,xpos,xlim_left = 0,[],0
-    #labels=[sasas[name]['active'] for name in sort_keys]
     labels=label_maker(sasas,kcat_cut=kcat,name_list=sort_keys)
-    #import pdb;pdb.set_trace()
     for snum,sn in enumerate(sort_keys):
 	#---unpack
         mean=sasas[sn]['mean'];std=sasas[sn]['std']
@@ -338,16 +215,23 @@ def label_maker(sasas, kcat_cut=33, name_list=None):
             labels.append(False)
     return labels
 
-
-res_list=Rspine[protein]
-sasas=filter_sasas(data.keys(),sasa_type=sasa_type,base_restype=hydrophobic,comp_restype=None,res_list=res_list)
-combos=combine_replicates(sasas)
+sasa_type='abs_sasa'
+#res_list=[1169, 1179, 1185, 1226, 1239, 1366]
+#[1147, 1162, 1233, 1246, 1291, 1293, 1301, 1366, 1376]
+#[1155, 1171, 1245, 1278, 1291, 1293, 1295, 1301, 1313, 1325, 1358, 1366]
+#[1170, 1240, 1265, 1277, 1278, 1295, 1320, 1327, 1376, 1385]
+#[1187, 1190, 1233, 1268, 1282, 1305, 1306, 1322, 1338, 1376, 1383]
+#[1246,1366,1224,1190,1383,1282,1152]
+#[1118, 1185, 1187, 1193, 1224, 1278, 1283, 1295, 1325, 1327, 1339, 1378]
+#[1278,1162,1378,1339,1323,1295,1118,1283]#Rspine[protein]
+sasas=filter_sasas(data,work,data.keys(),base_restype=hydrophobic,comp_restype=None,res_list=res_list)
+combined='no'
+combos=combine_replicates(sasas);combined='yes'
 keys=sorted(sasas.keys())
-#combos,new_keys=combine_SASAs(sasas,keys)
 #chunks=chunk_sasa(sasas)
 stats,keys=sasa_stats(combos)
-kcat=3;title='kcat {0}x\n{1}'.format(kcat,'regulatory spine')
-error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True,title=title,meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
+kcat=27;title='kcat {0}x\n{1}'.format(kcat,'regulatory spine')
+error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=True,title=title,meta={'kcat':kcat,'residues':res_list,'combined':combined},kcat=kcat)
 #each_SASA(sasas,keys,plot=False)
 #for key in keys:
 #    one_SASA(sasas[key],plot=False)
