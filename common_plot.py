@@ -16,21 +16,24 @@ hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
 label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
 color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
 
-def get_subdomains(protein,domainfile=os.path.abspath('kinase_subdomains')):
+#ipython notebooks are executed from calcs but make calls are a level up
+domain_fh=os.path.abspath('calcs/kinase_subdomains')
+if not os.path.isfile(domain_fh): domain_fh=os.path.abspath('kinase_subdomains')
+def get_subdomains(protein,domainfile=domain_fh):
     with open(domainfile,'r') as fp: domain_lines=fp.readlines(); fp.close()
     for line in domain_lines:
         line.strip('\n')
         dom_info=line.split(' ')
         if dom_info[0].upper()==protein.upper():
-            domains={'kd_start':int(dom_info[1]), 'kd_end':int(dom_info[2]),
-                     'kinase domain':range(int(dom_info[1]), int(dom_info[2])),
+            domains_borders={'kd_start':int(dom_info[1]), 'kd_end':int(dom_info[2]),
                      'ploop_start':int(dom_info[3]), 'ploop_end':int(dom_info[4]),
-                     'nucleotide binding loop':range(int(dom_info[3]), int(dom_info[4])),
                      'alphac_start':int(dom_info[5]), 'alphac_end':int(dom_info[6]),
-                     u"$\\alpha$C helix":range(int(dom_info[5]), int(dom_info[6])),
                      'catloop_start':int(dom_info[7]), 'catloop_end':int(dom_info[8]),
+                     'activation_start':int(dom_info[9]), 'activation_end':int(dom_info[10])}
+            domains={'kinase domain':range(int(dom_info[1]), int(dom_info[2])),
+                     'nucleotide binding loop':range(int(dom_info[3]), int(dom_info[4])),
+                     u"$\\alpha$C helix":range(int(dom_info[5]), int(dom_info[6])),
                      'catalytic loop':range(int(dom_info[7]), int(dom_info[8])),
-                     'activation_start':int(dom_info[9]), 'activation_end':int(dom_info[10]),
                      'activation loop':range(int(dom_info[9]), int(dom_info[10]))}
     domains[u"$\\alpha$C helix, activation loop"]=list(set(set(domains['activation loop'])|
                                                            set(domains[u"$\\alpha$C helix"])))
