@@ -32,11 +32,11 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
         bar = ax.bar(x_ticks, neg_avgs, width, color=color_list)
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='large')
-    plt.subplots_adjust(bottom=0.2)
+    fig.subplots_adjust(bottom=0.2)
     plt.ylabel(ylabel,size='x-large')
     if title!=None:
         plt.title(title,size='x-large')
-    plt.grid(axis='y')
+    ax.grid(axis='y')
 
     patches={
         True:mpatches.Patch(color=color_dict[True], label='activating'),
@@ -60,7 +60,8 @@ domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
-kcat=27;threshold=0.75
+kcat=work.plots[plotname]['specs']['kcat_cut']
+threshold=work.plots[plotname]['specs']['threshold']
 
 for domain_name,domain_residxs in domains.items():
 	hbts=hbonds_timesteps(work,data,sort_keys,donor_reslist=domain_residxs,
@@ -69,7 +70,7 @@ for domain_name,domain_residxs in domains.items():
 	deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
 	bond_list=[item for sublist in [deltas[key]['bonds'] for key in deltas] for item in sublist]
 	bond_list=list(set(bond_list))
-	title=u'Threshold = {0:1.3f}\tkcat: {1}x\nResidues: {2}'.format(threshold,3,domain_name)
+	title=u'Threshold = {0:1.3f}\tkcat: {1}x\nResidues: {2}'.format(threshold,4,domain_name)
 	print title
 	histofusion(deltas,keys,title=title,kcat_cut=kcat,zero=True,plot=False,
 				meta={'occupancy_diff threshold':threshold,'domain name':domain_name,
