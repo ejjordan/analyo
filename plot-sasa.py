@@ -147,70 +147,7 @@ def stack_SASA(data,sasa_type='abs_sasa',base_restype=None,comp_restype=None,res
     #picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta={})
 
 
-def error_SASA(data,sort_keys=None,sasa_type='abs_sasa',plot=True,meta=None,title=None,kcat=30):
-    #---prepare an axis
-    axes,fig = panelplot(
-        layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-    figsize=(12,8))
 
-    sasas=data
-    if not sort_keys: sort_keys=data.keys()
-
-    #---PLOT
-    counter,xpos,xlim_left = 0,[],0
-    labels=label_maker(sasas,kcat_cut=kcat,name_list=sort_keys)
-    for snum,sn in enumerate(sort_keys):
-        mean=sasas[sn]['mean']
-        std=sasas[sn]['std']
-        name=sasas[sn]['name']
-        activity=labels[snum]
-        kcat=sasas[sn]['kcat']
-        color = color_dict[activity]
-        #---boxes
-        ax = axes[0]
-        ax.errorbar(x=counter,y=mean,yerr=std,ecolor=color,elinewidth=4,capthick=4,
-                    capsize=6,fmt='ko')
-        xpos.append(counter)
-        counter+=1
-
-    ax.set_xticks(xpos)
-    ax.set_xticklabels([sasas[sn]['name'] for sn in sort_keys],rotation=45,ha='right')
-    ax.set_xlim(xlim_left-1,counter)
-    alpha=1
-    patches={
-        True:mpatches.Patch(color=color_dict[True], label='activating', alpha=alpha),
-        False:mpatches.Patch(color=color_dict[False], label='non-activating', alpha=alpha),
-        'wt':mpatches.Patch(color=color_dict['wt'], label='wild type', alpha=alpha),
-        'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown', alpha=alpha)}    
-    used_patch=[patches[label] for label in set(labels)]
-    used_label=[label_dict[label] for label in set(labels)]
-    if title!=None:
-        plt.title(title,size='x-large')
-    ax.legend(used_patch,used_label)
-    ax.set_ylabel('SASA (\AA$^2$)')
-    if plot:
-        fig.show()
-    else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
-
-def label_maker(sasas, kcat_cut=33, name_list=None):
-
-    """
-    This function takes a 'sasa' object and a kcat cut-off and returns activation (or 
-    non-activation) labels. If supplied a name_list the labels will be returned in the
-    specified order.
-    """
-    
-    if not name_list: name_list=[sasas[sn]['name'] for sn in sasas]
-    kcats=[sasas[name]['kcat'] for name in name_list]
-    labels=[]
-    for kcat in kcats:
-        if kcat=='X': labels.append('maybe')
-        elif kcat=='WT': labels.append('wt')
-        elif float(kcat)>=kcat_cut:
-            labels.append(True)
-        else:
-            labels.append(False)
-    return labels
 
 sasa_type='abs_sasa'
 #res_list=[1169, 1179, 1185, 1226, 1239, 1366]
@@ -226,9 +163,6 @@ combined='no'
 combos=combine_replicates(sasas);combined='yes'
 keys=sorted(sasas.keys())
 #chunks=chunk_sasa(sasas)
-stats,keys=sasa_stats(combos)
-kcat=30;title='kcat {0}x\n{1}'.format(kcat,'regulatory spine')
-error_SASA(stats,sort_keys=keys,sasa_type=sasa_type,plot=False,title=title,meta={'kcat':kcat,'residues':res_list,'combined':'yes'},kcat=kcat)
 #each_SASA(sasas,keys,plot=False)
 #for key in keys:
 #    one_SASA(sasas[key],plot=False)
