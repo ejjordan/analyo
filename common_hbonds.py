@@ -118,23 +118,3 @@ def occupancy_diff(hbonds,reference=None,threshold=0.4):
     sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
     return altered_donors,sorted_keys
 
-def label_maker(deltas, kcat_cut=3, name_list=None,val_type='deltas'):
-
-    """
-    This function takes a 'delta' object and a kcat cut-off and returns activation (or
-    non-activation) labels. If supplied a name_list the labels will be returned in the
-    specified order.
-    """
-
-    if not name_list: name_list=[deltas[sn]['name'] for sn in deltas]
-    if val_type=='deltas': kcats=[deltas[name]['kcat'] for name in name_list]
-    else: kcats=values
-    labels=[]
-    for kcat in kcats:
-        if kcat=='X': labels.append('maybe')
-        elif kcat=='WT': labels.append('wt')
-        elif float(kcat)>=kcat_cut:
-            labels.append(True)
-        else:
-            labels.append(False)
-    return labels

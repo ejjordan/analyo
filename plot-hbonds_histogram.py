@@ -13,13 +13,15 @@ plotname = 'hbonds_histogram'
 data,calc = plotload(plotname,work)
 
 def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
-                ylabel='H-bonds occupancy difference', meta=None, kcat_cut=20,zero=False):
+                meta=None,zero=False, max_inactive=2, min_active=4,
+                ylabel='H-bonds occupancy difference'):
     sorted_names=keys
     avgs=np.array([deltas[name]['delta'] for name in sorted_names])
     if zero:
         pos_avgs=[avg if avg!=0 else 0.1 for avg in avgs]
         neg_avgs=[avg if avg!=0 else -0.1 for avg in avgs]
-    labels=label_maker(deltas, kcat_cut, name_list=sorted_names)
+    labels=label_maker(data=deltas, name_list=sorted_names,
+                       max_inactive=max_inactive, min_active=min_active)
     mutations=[deltas[name]['name'] for name in sorted_names]
     fig, ax = plt.subplots()
     x_ticks = np.arange(len(labels))
@@ -41,6 +43,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
     patches={
         True:mpatches.Patch(color=color_dict[True], label='activating'),
         False:mpatches.Patch(color=color_dict[False], label='non-activating'),
+        'I':mpatches.Patch(color=color_dict['I'], label='mildly activating'),
         'wt':mpatches.Patch(color=color_dict['wt'], label='wild type'),
         'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown')}
     used_patch=[patches[label] for label in set(labels)]
@@ -60,8 +63,13 @@ domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
-kcat=work.plots[plotname]['specs']['kcat_cut']
+min_active=work.plots[plotname]['specs']['min_active']
+max_inactive=work.plots[plotname]['specs']['max_inactive']
 threshold=work.plots[plotname]['specs']['threshold']
+if protein=='alk':
+    for name in sort_keys:
+        if work.meta[name]['kcat'] not in ['WT','X','I']:
+            work.meta[name]['kcat']=float(work.meta[name]['kcat'])/9
 
 for domain_name,domain_residxs in domains.items():
 	hbts=hbonds_timesteps(work,data,sort_keys,donor_reslist=domain_residxs,
@@ -70,9 +78,11 @@ for domain_name,domain_residxs in domains.items():
 	deltas,keys=occupancy_diff(combos,reference='inactive_wt',threshold=threshold)
 	bond_list=[item for sublist in [deltas[key]['bonds'] for key in deltas] for item in sublist]
 	bond_list=list(set(bond_list))
-	title=u'Threshold = {0:1.3f}\tkcat: {1}x\nResidues: {2}'.format(threshold,4,domain_name)
+	title=u'inactive kcat $<=$ {0}x, active kcat $>=$ {1}x, Threshold = {2:1.3f}\nResidues: {3}'.format(max_inactive,min_active,threshold,domain_name)
 	print title
-	histofusion(deltas,keys,title=title,kcat_cut=kcat,zero=True,plot=False,
-				meta={'occupancy_diff threshold':threshold,'domain name':domain_name,
-					  'donor_residues':domain_residxs,'acceptor_residues':domain_residxs,
-					  'kcat cutoff':kcat,'intradomain bonds excluded':'no'})
+	histofusion(deltas, keys, title=title, zero=True, plot=False,
+                max_inactive=max_inactive, min_active=min_active,
+				meta={'occupancy_diff threshold':threshold, 'domain name':domain_name,
+					  'donor_residues':domain_residxs, 'acceptor_residues':domain_residxs,
+					  'max inactive':max_inactive, 'min active':min_active,
+                      'intradomain bonds excluded':'no'})

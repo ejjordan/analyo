@@ -13,8 +13,9 @@ Rspine={'braf':[505,516,574,595],
         'alk':[1171,1182,1247,1271],
         'her2':[774,785,843,864]}
 hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
-label_dict={True:'activating', False:'non-activating', 'maybe':'unknown', 'wt':'wild type'}
-color_dict={True:'r', False:'g', 'maybe':'b', 'wt':'m'}
+label_dict={True:'activating', False:'non-activating', 'I':'mildly activating',
+			'maybe':'unknown', 'wt':'wild type'}
+color_dict={True:'r', False:'g', 'I':'m', 'maybe':'b', 'wt':'k'}
 
 #ipython notebooks are executed from calcs but make calls are a level up
 domain_fh=os.path.abspath('calcs/kinase_subdomains')
@@ -60,3 +61,29 @@ def get_subdomains(protein,domainfile=domain_fh):
     domains[u"kinase domain - ($\\alpha$C helix, activation loop)"]=list(set(
         domains['kinase domain']) - set(domains[u"$\\alpha$C helix, activation loop"]))
     return domains
+
+def label_maker(data, name_list=None, max_inactive=4, min_active=4):
+
+    """
+    This function takes a data object (e.g. form sasa or hbonds) and a kcat cut-off and
+	returns activation (or non-activation) labels. If supplied a name_list the labels
+	will be returned in the specified order.
+    """
+
+    if not name_list: name_list=[data[sn]['name'] for sn in data]
+    labels=[]
+    for name in name_list:
+        if 'kcat' in data[name]:
+            kcat=data[name]['kcat']
+            if kcat=='X': labels.append('maybe')
+            elif kcat=='WT': labels.append('wt')
+            elif float(kcat)>=min_active:
+		        labels.append(True)
+            elif float(kcat)<=max_inactive:
+                labels.append(False)
+            elif float(kcat)>max_inactive and float(kcat)<min_active:
+		        labels.append('I') #for intermediate activity
+            else: raise Exception('[ERROR]: something went wrong with the kcat data, '
+                                  'see the meta file')            
+        else: raise Exception('[ERROR]: no kcat information in "data" provided')
+    return labels
