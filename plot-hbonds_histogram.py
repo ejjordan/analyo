@@ -22,10 +22,10 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
         neg_avgs=[avg if avg!=0 else -0.1 for avg in avgs]
     labels=label_maker(data=deltas, name_list=sorted_names,
                        max_inactive=max_inactive, min_active=min_active)
-    mutations=[deltas[name]['name'] for name in sorted_names]
+    mutations=[deltas[name]['name'].upper() for name in sorted_names]
     fig, ax = plt.subplots()
     x_ticks = np.arange(len(labels))
-    width=0.8
+    width=0.75
     color_list=[color_dict[i] for i in labels]
     label_list=[label_dict[i] for i in labels]
     bar = ax.bar(x_ticks, avgs, width, color=color_list)
@@ -33,7 +33,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
         bar = ax.bar(x_ticks, pos_avgs, width, color=color_list)
         bar = ax.bar(x_ticks, neg_avgs, width, color=color_list)
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='large')
+    ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='medium')
     fig.subplots_adjust(bottom=0.2)
     plt.ylabel(ylabel,size='x-large')
     if title!=None:

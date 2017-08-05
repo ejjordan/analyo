@@ -118,3 +118,7 @@ def occupancy_diff(hbonds,reference=None,threshold=0.4):
     sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
     return altered_donors,sorted_keys
 
+def alk_kcat_normalize(work,hbonds):
+    for name in hbonds:
+        if hbonds[name]['kcat'] not in ['WT','X','I']:
+            hbonds[name]['kcat']=float(work.meta[name]['kcat'])/9
