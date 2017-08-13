@@ -13,6 +13,10 @@ Rspine={'braf':[505,516,574,595],
         'alk':[1171,1182,1247,1271],
         'her2':[774,785,843,864]}
 hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
+residue_codes = {'ARG':'R','HIS':'H','LYS':'K','ASP':'D','GLU':'E',
+    'SER':'S','THR':'T','ASN':'N','GLN':'Q','CYS':'C','SEL':'U','GLY':'G','PRO':'P',
+    'ALA':'A','ILE':'I','LEU':'L','MET':'M','PHE':'F','TRP':'W','TYR':'Y','VAL':'V'}
+residue_codes_reverse = dict([(j,i) for i,j in residue_codes.items()])
 label_dict={True:'activating', False:'non-activating', 'I':'mildly activating',
 			'maybe':'unknown', 'wt':'wild type'}
 color_dict={True:'r', False:'g', 'I':'m', 'maybe':'b', 'wt':'k'}

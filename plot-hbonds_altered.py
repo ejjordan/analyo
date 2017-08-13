@@ -123,16 +123,17 @@ def thresh_plotter(thresh,deltas=False,chunks=10,plot=True,title=None,meta=None,
 
 
 #finalize the data and call the plotter
-protein='alk'
+protein=work.meta['protein_name']
 domains=get_subdomains(protein)
 if not domains: print "[ERROR] no subdomains found"; exit
 
 sort_keys=sorted(data.keys())
 min_active=work.plots[plotname]['specs']['min_active']
 max_inactive=work.plots[plotname]['specs']['max_inactive']
-#hbts=hbonds_timesteps(work,data,sort_keys,donor_reslist=domains['$\\alpha$C helix, activation loop'],
-#					  acceptor_reslist=domains['$\\alpha$C helix, activation loop'],divy=True)
-hbts=hbonds_timesteps(work,data,sort_keys,donor_reslist=None,acceptor_reslist=None,divy=True)
+hbts=hbonds_timesteps(work,data,sort_keys,divy=True,
+					  donor_reslist=domains['$\\alpha$C helix, activation loop'],
+					  acceptor_reslist=domains['$\\alpha$C helix, activation loop'])
+
 
 if protein=='alk':
 	alk_kcat_normalize(work,hbts)

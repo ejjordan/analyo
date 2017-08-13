@@ -9,6 +9,7 @@ import time
 from joblib import Parallel,delayed
 from joblib.pool import has_shareable_memory
 from base.tools import status,framelooper
+import common_plots
 
 #---block: what to plot
 routine = ['contact_map']
@@ -18,10 +19,6 @@ residue_types = {'ARG':'basic','HIS':'basic','LYS':'basic',
 	'ALA':'hydrophobic','VAL':'hydrophobic','ILE':'hydrophobic','LEU':'hydrophobic',
 		'MET':'hydrophobic','PHE':'hydrophobic','TYR':'hydrophobic','TRP':'hydrophobic',
 	'CYS':'special','SEC':'special','GLY':'special','PRO':'special'}
-residue_codes = {'ARG':'R','HIS':'H','LYS':'K','ASP':'D','GLU':'E',
-	'SER':'S','THR':'T','ASN':'N','GLN':'Q','CYS':'C','SEL':'U','GLY':'G','PRO':'P',
-	'ALA':'A','ILE':'I','LEU':'L','MET':'M','PHE':'F','TRP':'W','TYR':'Y','VAL':'V'}
-residue_codes_reverse = dict([(j,i) for i,j in residue_codes.items()])
 
 residue_type_colors = {'basic':'Blues','acidic':'Reds','hydrophobic':'Greens',
 	'polar':'Purples','special':'Oranges'}
