@@ -16,7 +16,8 @@ hydrophobic_core_noJM={'alk':[1170,1171,1174,1179,1239,1245,1271,1240]}
 label_dict={True:'activating', False:'non-activating', 'I':'mildly activating',
 			'maybe':'unknown', 'wt':'wild type'}
 color_dict={True:'r', False:'g', 'I':'m', 'maybe':'b', 'wt':'k'}
-
+pattern_dict = {'nucleotide binding loop':'//', '$\\alpha$C helix':'..',
+				'catalytic loop':'\\', 'activation loop':'oo'}
 #ipython notebooks are executed from calcs but make calls are a level up
 domain_fh=os.path.abspath('calcs/kinase_subdomains')
 if not os.path.isfile(domain_fh): domain_fh=os.path.abspath('kinase_subdomains')
