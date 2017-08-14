@@ -37,29 +37,38 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 					pattern_match=True
 			if not pattern_match: pattern_list.append(' ')
 	
-	fig, ax = plt.subplots()
+	fig, ax = plt.subplots(figsize=(14,10))
 	x_ticks = np.arange(len(labels))
 	width=0.75
 	color_list=[color_dict[i] for i in labels]
 	label_list=[label_dict[i] for i in labels]
-	bars = ax.bar(x_ticks, avgs, width, color=color_list)
+	lower_yvals=[min(0,yval) for yval in avgs]
+	bars = ax.bar(x_ticks, avgs, width, color=color_list, zorder=2)
 	for bar,pattern in zip(bars,pattern_list):
 		bar.set_hatch(pattern)
 	if zero:
-		bars = ax.bar(x_ticks, pos_avgs, width, color=color_list)
+		bars = ax.bar(x_ticks, pos_avgs, width, color=color_list, zorder=2)
 		for bar,pattern in zip(bars,pattern_list):
 			bar.set_hatch(pattern)
-		bars = ax.bar(x_ticks, neg_avgs, width, color=color_list)
+		bars = ax.bar(x_ticks, neg_avgs, width, color=color_list, zorder=2)
 		for bar,pattern in zip(bars,pattern_list):
 			bar.set_hatch(pattern)
-
+		lower_yvals=[min(0,yval) for yval in neg_avgs]
 	ax.set_xticks(x_ticks)
 	ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='medium')
+	ymin,ymax=ax.get_ylim()
+	plot_size=ymax-ymin;buf_size=0.005*plot_size
+	xtick_lines=[[[xval,xval],[ymin+buf_size,ymax-buf_size]] for xval,ymax in zip(x_ticks,lower_yvals)]
+	for line in xtick_lines:
+		ax.plot(line[0],line[1],color='k',linestyle='-.',zorder=1.5, linewidth=1)
+	ax.set_ylim(bottom=ymin)
+	ax.set_xlim(x_ticks[0]-1,x_ticks[-1]+1)
 	fig.subplots_adjust(bottom=0.2)
 	plt.ylabel(ylabel,size='x-large')
 	if title!=None:
 		plt.title(title,size='x-large')
-	ax.grid(axis='y')
+	ax.yaxis.grid(True)
+	ax.set_axisbelow(True)
 
 	patches={
 		True:mpatches.Patch(color=color_dict[True], label='activating'),
@@ -69,7 +78,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 		'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown')}
 	used_patch=[patches[label] for label in set(labels)]
 	used_label=[label_dict[label] for label in set(labels)]
-	legend1=ax.legend(used_patch,used_label,loc='upper right',title="Mutation type")
+	legend1=ax.legend(used_patch,used_label,loc='upper right',title="Mutation type",fontsize=8)
 	hatches={
 		'nucleotide binding loop':mpatches.Patch(facecolor='w',edgecolor='k',
 												 label='nucleotide binding loop',
@@ -85,7 +94,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 										 hatch=pattern_dict['activation loop'])}
 	used_hatch=[hatches[hatch] for hatch in set(pattern_label_list)]
 	used_hatch_label=list(set(pattern_label_list))
-	legend2=ax.legend(used_hatch,used_hatch_label,loc='center right',
+	legend2=ax.legend(used_hatch,used_hatch_label,loc='upper center',fontsize=8,
 					  title="Kinase domain location")
 	ax.add_artist(legend1)
 	ax.add_artist(legend2)

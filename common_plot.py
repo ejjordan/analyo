@@ -20,8 +20,8 @@ residue_codes_reverse = dict([(j,i) for i,j in residue_codes.items()])
 label_dict={True:'activating', False:'non-activating', 'I':'mildly activating',
 			'maybe':'unknown', 'wt':'wild type'}
 color_dict={True:'r', False:'g', 'I':'m', 'maybe':'b', 'wt':'k'}
-pattern_dict = {'nucleotide binding loop':'//', '$\\alpha$C helix':'..',
-				'catalytic loop':'\\', 'activation loop':'oo'}
+pattern_dict = {'nucleotide binding loop':'///', '$\\alpha$C helix':'...',
+				'catalytic loop':'xxx', 'activation loop':'\\\\'}
 #ipython notebooks are executed from calcs but make calls are a level up
 domain_fh=os.path.abspath('calcs/kinase_subdomains')
 if not os.path.isfile(domain_fh): domain_fh=os.path.abspath('kinase_subdomains')
