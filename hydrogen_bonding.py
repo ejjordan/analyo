@@ -185,12 +185,12 @@ def hydrogen_bonding(grofile,trajfile,**kwargs):
 	status('completed caching in %.1f minutes'%((time.time()-st)/60.),tag='status')
 
 	#---export variables
-	from codes import hbonds
-	hbonds.hydrogen_bond_ref = hydrogen_bond_ref
-	hbonds.all_donor_coords = all_donor_coords
-	hbonds.all_acceptor_coords = all_acceptor_coords
-	hbonds.all_h_coords = all_h_coords
-	hbonds.vecs = vecs
+	from codes import hbonds_framewise
+	hbonds_framewise.hydrogen_bond_ref = hydrogen_bond_ref
+	hbonds_framewise.all_donor_coords = all_donor_coords
+	hbonds_framewise.all_acceptor_coords = all_acceptor_coords
+	hbonds_framewise.all_h_coords = all_h_coords
+	hbonds_framewise.vecs = vecs
 		
 	#---debug
 	if debug:
@@ -199,19 +199,19 @@ def hydrogen_bonding(grofile,trajfile,**kwargs):
 		hbonds.donors_inds = donors_inds
 		hbonds.acceptors_side = acceptors_side
 		fr = 686 #---careful debugging at this frame
-		incoming = hbonds.hbonder_framewise(fr,distance_cutoff=distance_cutoff,angle_cutoff=angle_cutoff)
+		incoming = hbonds_framewise.hbonder_framewise(fr,distance_cutoff=distance_cutoff,angle_cutoff=angle_cutoff)
 		sys.quit()
 
 	start = time.time()
 	out_args = {'distance_cutoff':distance_cutoff,'angle_cutoff':angle_cutoff}
 	if run_parallel:
 		incoming = Parallel(n_jobs=8,verbose=10 if debug else 0)(
-			delayed(hbonds.hbonder_framewise,has_shareable_memory)(fr,**out_args) 
+			delayed(hbonds_framewise.hbonder_framewise,has_shareable_memory)(fr,**out_args) 
 			for fr in framelooper(nframes,start=start))
 	else: 
 		incoming = []
 		for fr in framelooper(nframes):
-			incoming.append(hbonds.hbonder_framewise(fr,**out_args))
+			incoming.append(hbonds_framewise.hbonder_framewise(fr,**out_args))
 
 	#---get valid frames
 	valid_frames = np.where([len(i['donors'])>0 for i in incoming])[0]
