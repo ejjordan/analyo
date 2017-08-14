@@ -6,38 +6,41 @@ import re
 
 
 def filter_sasas(data,work,SASA_keys,sasa_type='abs_sasa',
-                 base_restype=None,comp_restype=None,res_list=None):
+				 base_restype=None,comp_restype=None,res_list=None):
 
-    """
-    This function unpacks the data from a sasa file according to use specifications.
-    """
+	"""
+	This function unpacks the data from a sasa file according to use specifications.
+	"""
 
-    SASAs={}
-    for sn in SASA_keys:
-        raw_sasa=zip(data[sn]['data']['resname'],data[sn]['data']['resid'],
-                       data[sn]['data'][sasa_type])
-        SASAs[sn]={'name':' '.join(sn.split('_')), 'kcat':work.meta[sn]['kcat'],
-                   'base_sasa':{}}
-        if comp_restype: SASAs[sn]['comp_sasa']={}
-        if type(res_list)!=list: 
-            res_list=data[sn]['data']['resid']
-            SASA_sums=np.sum([i[2] for i in raw_sasa if i[1] in res_list],axis=0)
-        else:
-            base_sasa=[];comp_sasa=[];SASA_sums=[]
-            for elt in raw_sasa:
-                resname=elt[0];resid=elt[1];sasa=elt[2]
-                if resid in res_list:
-                    if base_restype and resname in base_restype:
-                        SASAs[sn]['base_sasa'][resid]={'resid':resid, 'resname':resname,
-                                                         'sasa_vals': sasa}
-                    if comp_restype and resname in comp_restype:
-                        SASAs[sn]['comp_sasa'][resid]={'resid':resid, 'resname':resname,
-                                                       'sasa_vals': sasa}
-                    if not base_restype:                        
-                        SASA_sums.append(sasa)
-                        SASAs[sn]['base_sasa'][resid]={'resid':resid, 'resname':resname,
-                                                         'sasa_vals': sasa}
-    return SASAs
+	SASAs={}
+	for sn in SASA_keys:
+		raw_sasa=zip(data[sn]['data']['resname'],data[sn]['data']['resid'],
+					 data[sn]['data'][sasa_type])
+		SASAs[sn]={'name':' '.join(sn.split('_')), 'kcat':work.meta[sn]['kcat'],
+				   'base_sasa':{}}
+		if comp_restype: SASAs[sn]['comp_sasa']={}
+		if type(res_list)!=list:
+			res_list=data[sn]['data']['resid']
+			SASA_sums=np.sum([i[2] for i in raw_sasa if i[1] in res_list],axis=0)
+		else:
+			base_sasa=[];comp_sasa=[];SASA_sums=[]
+			for elt in raw_sasa:
+				resname=elt[0];resid=elt[1];sasa=elt[2]
+				if resid in res_list:
+					if base_restype and resname in base_restype:
+						SASAs[sn]['base_sasa'][resid]={'resid':resid,
+													   'resname':resname,
+													   'sasa_vals':sasa}
+					if comp_restype and resname in comp_restype:
+						SASAs[sn]['comp_sasa'][resid]={'resid':resid,
+													   'resname':resname,
+													   'sasa_vals':sasa}
+					if not base_restype:
+						SASA_sums.append(sasa)
+						SASAs[sn]['base_sasa'][resid]={'resid':resid,
+													   'resname':resname,
+													   'sasa_vals':sasa}
+	return SASAs
 
 def combine_replicates(unpacked_SASAs):
 
