@@ -24,8 +24,10 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
     if not sort_keys: sort_keys=data.keys()
 
     #---PLOT
-    counter,xpos,xlim_left = 0,[],0
+    counter,x_ticks,lower_yvals = 0,[],[]
     labels=label_maker(data,name_list=sort_keys,max_inactive=max_inactive, min_active=min_active)
+    mutations=[sasas[sn]['name'].upper() for sn in sort_keys]
+    #pattern_list,pattern_label_list=get_hatches(mutations,domains)
     for snum,sn in enumerate(sort_keys):
         mean=sasas[sn]['mean']
         std=sasas[sn]['std']
@@ -35,14 +37,23 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
         color = color_dict[activity]
         #---boxes
         ax = axes[0]
-        ax.errorbar(x=counter,y=mean,yerr=std,ecolor=color,elinewidth=4,capthick=4,
+        ax.errorbar(x=counter,y=mean,yerr=std,ecolor=color,elinewidth=8,capthick=6,
                     capsize=6,fmt='ko')
-        xpos.append(counter)
+        x_ticks.append(counter)
+        lower_yvals.append(mean-std)
         counter+=1
 
-    ax.set_xticks(xpos)
-    ax.set_xticklabels([sasas[sn]['name'] for sn in sort_keys],rotation=45,ha='right')
-    ax.set_xlim(xlim_left-1,counter)
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels(mutations,rotation='vertical',ha='center')
+    ymin,ymax=ax.get_ylim()
+    plot_size=ymax-ymin;buf_size=0.005*plot_size
+    xtick_lines=[[[xval,xval],[ymin+buf_size,ymax-buf_size]] for xval,ymax in zip(
+        x_ticks,lower_yvals)]
+    for line in xtick_lines:
+        ax.plot(line[0],line[1],color='k',linestyle='-.',zorder=1.5, linewidth=1)
+    ax.set_ylim(bottom=ymin)
+    ax.set_xlim(x_ticks[0]-1,x_ticks[-1]+1)
+    fig.subplots_adjust(bottom=0.2)
     alpha=1
     patches={
         True:mpatches.Patch(color=color_dict[True], label='activating', alpha=alpha),
@@ -58,7 +69,7 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
     ax.set_ylabel('SASA (\AA$^2$)')
     if plot:
         fig.show()
-    else: picturesave('fig.error-%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
+    else: picturesave('fig.%s'%plotname,work.plotdir,backup=False,version=True,meta=meta)
 
 
 #finalize the data and call the plotter

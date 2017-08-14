@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import os,re
 
 hydrophobic=['PHE','TYR','ILE','LEU','VAL','TRP']
 polar=['ARG','LYS','GLU','ASP','HIS','SER','THR','ASN','GLN']
@@ -92,3 +92,18 @@ def label_maker(data, name_list=None, max_inactive=4, min_active=4):
                                   'see the meta file')            
         else: raise Exception('[ERROR]: no kcat information in "data" provided')
     return labels
+
+def get_hatches(mutations, domains):
+	pattern_list=[];pattern_label_list=[]
+	for mut_name in mutations:
+		match=re.match('[A-Z](\d{3,4})[A-Z]',mut_name)
+		if match:
+			mut_idx=int(match.groups()[0])
+			pattern_match=False
+			for domain in pattern_dict:
+				if mut_idx in domains[domain]:
+					pattern_list.append(pattern_dict[domain])
+					pattern_label_list.append(domain)
+					pattern_match=True
+			if not pattern_match: pattern_list.append(' ')
+	return pattern_list,pattern_label_list
