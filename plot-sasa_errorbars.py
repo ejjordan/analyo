@@ -38,7 +38,7 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
         #---boxes
         ax = axes[0]
         ax.errorbar(x=counter,y=mean,yerr=std,ecolor=color,elinewidth=8,capthick=6,
-                    capsize=6,fmt='ko')
+                    capsize=6,fmt='wo')
         x_ticks.append(counter)
         lower_yvals.append(mean-std)
         counter+=1
@@ -85,7 +85,7 @@ if protein=='alk':
         if work.meta[name]['kcat'] not in ['WT','X','I']:
             work.meta[name]['kcat']=float(work.meta[name]['kcat'])/9
 res_list=Rspine[protein]
-sasas=filter_sasas(data,work,data.keys(),base_restype=hydrophobic,comp_restype=None,res_list=res_list)
+sasas=filter_sasas(data,work,data.keys(),base_restype=None,comp_restype=None,res_list=res_list)
 combined='no'
 combos=combine_replicates(sasas);combined='yes'
 keys=sorted(sasas.keys())

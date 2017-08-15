@@ -27,17 +27,17 @@ def filter_sasas(data,work,SASA_keys,sasa_type='abs_sasa',
 			for elt in raw_sasa:
 				resname=elt[0];resid=elt[1];sasa=elt[2]
 				if resid in res_list:
-					if base_restype and resname in base_restype:
+					if not base_restype:
+						SASA_sums.append(sasa)
+						SASAs[sn]['base_sasa'][resid]={'resid':resid,
+													   'resname':resname,
+													   'sasa_vals':sasa}
+					elif base_restype and resname in base_restype:
 						SASAs[sn]['base_sasa'][resid]={'resid':resid,
 													   'resname':resname,
 													   'sasa_vals':sasa}
 					if comp_restype and resname in comp_restype:
 						SASAs[sn]['comp_sasa'][resid]={'resid':resid,
-													   'resname':resname,
-													   'sasa_vals':sasa}
-					if not base_restype:
-						SASA_sums.append(sasa)
-						SASAs[sn]['base_sasa'][resid]={'resid':resid,
 													   'resname':resname,
 													   'sasa_vals':sasa}
 	return SASAs
