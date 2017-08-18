@@ -1,7 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import time
 from numpy import *
+from common_plot import *
 import MDAnalysis
 from base.tools import status
 from MDAnalysis.analysis.rms import RMSD
@@ -36,53 +37,46 @@ def protein_rmsd(grofile,trajfile,**kwargs):
 		r1 = protein.coordinates()
 		coords.append(r1)
 
-#def kinase_domains(kinase_domain_file='all_kinase.csv'):
-        
 
-def rmsd_multi(grofile, trajfile,
-               active_struct='/home/joe/alk/analysis/active_wt_alk.pdb',
-               inactive_struct='/home/joe/alk/analysis/inactive_wt_alk.pdb',
-               selections='all', **kwargs):
-                
+def rmsd_multi(grofile, trajfile, selections='all', **kwargs):
+
 	#---unpack
 	sn = kwargs['sn']
 	slice_name = kwargs['slice_name']
 	work = kwargs['workspace']
+	calc = kwargs['calc']
 	result = {}
-	#result['rmsds'] = {}
+	active_struct=calc['specs']['active_struct']
+	inactive_struct=calc['specs']['inactive_struct']
 
-	#---prepare universe	
-	slice_name = kwargs['calc']['slice_name']
-	group = kwargs['calc']['group']
-	grofile,trajfile = [work.slice(sn)[slice_name][group][i] for i in ['gro','xtc']]
-	uni = MDAnalysis.Universe(work.postdir+grofile,work.postdir+trajfile)
+	#---prepare universe
+	slice_name = kwargs['sn']#['calc']['slice_name']
+	uni = MDAnalysis.Universe(grofile,trajfile)
 	nframes = len(uni.trajectory)
-	protein = uni.select_atoms('protein and name CA')
-        
-        #---reference structures
-        act_ref=MDAnalysis.Universe(active_struct)
-        inact_ref=MDAnalysis.Universe(inactive_struct)
+	protein = uni.select_atoms('name CA',updating=True)
 
-	header = "Protein_name,kd_start,kd_end,ploop_start,ploop_end,alphac_start,alphac_end"+\
-		",catloop_start,catloop_end,activation_start,activation_end"
-	header = header.split(',')
-        alk='ALK,1116,1392,1123,1128,1158,1176,1243,1254,1268,1291'.split(',')
+	#---reference structures
+	act_ref=MDAnalysis.Universe(active_struct)
+	inact_ref=MDAnalysis.Universe(inactive_struct)
 
-	alphac_start = int(alk[header.index('alphac_start')])
-	alphac_end = int(alk[header.index('alphac_end')])
-	aloop_start = int(alk[header.index('activation_start')])
-	aloop_end = int(alk[header.index('activation_end')])
+	protein_name=work.meta['protein_name']
+	domains=get_subdomains(protein_name)
+	if not domains: print "[ERROR] no subdomains found"; exit
+	alphac_start = int(domains['$\\alpha$C helix'][0])
+	alphac_end = int(domains['$\\alpha$C helix'][-1])
+	aloop_start = int(domains['activation loop'][0])
+	aloop_end = int(domains['activation loop'][-1])
+
 
 	if selections=='ach' or selections=='all':
 		align_sel='name CA and not (resid %s-%s)'%(alphac_start,alphac_end)
 		rmsd_sel='name CA and resid %s-%s'%(alphac_start,alphac_end)
 		mod_act='ach_act';mod_inact='ach_inact'
-		
+		act_rmsd=[];inact_rmsd=[]
 		act_rmsd=RMSD(uni,act_ref,select=align_sel,groupselections=[rmsd_sel])
 		act_rmsd.run()
 		inact_rmsd=RMSD(uni,inact_ref,select=align_sel,groupselections=[rmsd_sel])
 		inact_rmsd.run()
-                
 		result[mod_act] = act_rmsd.rmsd
 		result[mod_inact] = inact_rmsd.rmsd
 
@@ -90,15 +84,12 @@ def rmsd_multi(grofile, trajfile,
 		align_sel='name CA and not resid %s-%s'%(aloop_start,aloop_end)
 		rmsd_sel='name CA and resid %s-%s'%(aloop_start,aloop_end)
 		mod_act='aloop_act';mod_inact='aloop_inact'
-		
 		act_rmsd=RMSD(uni,act_ref,select=align_sel,groupselections=[rmsd_sel])
 		act_rmsd.run()
 		inact_rmsd=RMSD(uni,inact_ref,select=align_sel,groupselections=[rmsd_sel])
 		inact_rmsd.run()
-		
 		result[mod_act] = act_rmsd.rmsd
 		result[mod_inact] = inact_rmsd.rmsd
-			
 	if selections=='ach_aloop' or selections=='all':
 		align_sel='name CA and not (resid %s-%s or resid %s-%s)'%(
 			alphac_start,alphac_end,aloop_start,aloop_end)
@@ -110,27 +101,22 @@ def rmsd_multi(grofile, trajfile,
 		act_rmsd.run()
 		inact_rmsd=RMSD(uni,inact_ref,select=align_sel,groupselections=[rmsd_sel])
 		inact_rmsd.run()
-		
 		result[mod_act] = act_rmsd.rmsd
 		result[mod_inact] = inact_rmsd.rmsd
-			
 	if selections=='CA' or selections=='all':
 		align_sel='name CA'
 		rmsd_sel='name CA'
 		mod_act='CA_act';mod_inact='CA_inact'
-		
 		act_rmsd=RMSD(uni,act_ref,select=align_sel,groupselections=[rmsd_sel])
 		act_rmsd.run()
 		inact_rmsd=RMSD(uni,inact_ref,select=align_sel,groupselections=[rmsd_sel])
 		inact_rmsd.run()
-		
 		result[mod_act] = act_rmsd.rmsd
 		result[mod_inact] = inact_rmsd.rmsd
-			
+
 	#---pack
 	attrs = {}
-	
-	return result,attrs	
+	return result,attrs
 
 #---TRY AGAIN
 
