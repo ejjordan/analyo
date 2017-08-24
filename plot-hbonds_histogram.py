@@ -37,7 +37,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 					pattern_match=True
 			if not pattern_match: pattern_list.append(' ')
 	
-	fig, ax = plt.subplots(figsize=(14,10))
+	fig, ax = plt.subplots(figsize=(14,8))
 	x_ticks = np.arange(len(labels))
 	width=0.75
 	color_list=[color_dict[i] for i in labels]
@@ -55,7 +55,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 			bar.set_hatch(pattern)
 		lower_yvals=[min(0,yval) for yval in neg_avgs]
 	ax.set_xticks(x_ticks)
-	ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='medium')
+	ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='xx-large')
 	ymin,ymax=ax.get_ylim()
 	plot_size=ymax-ymin;buf_size=0.005*plot_size
 	xtick_lines=[[[xval,xval],[ymin+buf_size,ymax-buf_size]] for xval,ymax in zip(x_ticks,lower_yvals)]
@@ -64,9 +64,9 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 	ax.set_ylim(bottom=ymin)
 	ax.set_xlim(x_ticks[0]-1,x_ticks[-1]+1)
 	fig.subplots_adjust(bottom=0.2)
-	plt.ylabel(ylabel,size='x-large')
+	plt.ylabel(ylabel,size='xx-large')
 	if title!=None:
-		plt.title(title,size='x-large')
+		plt.title(title,size='xx-large')
 	ax.yaxis.grid(True)
 	ax.set_axisbelow(True)
 
@@ -78,7 +78,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 		'maybe':mpatches.Patch(color=color_dict['maybe'], label='unknown')}
 	used_patch=[patches[label] for label in set(labels)]
 	used_label=[label_dict[label] for label in set(labels)]
-	legend1=ax.legend(used_patch,used_label,loc='upper right',title="Mutation type",fontsize=8)
+	legend1=ax.legend(used_patch,used_label,loc='upper right',title="Mutation type",fontsize=14)
 	hatches={
 		'nucleotide binding loop':mpatches.Patch(facecolor='w',edgecolor='k',
 												 label='nucleotide binding loop',
@@ -94,7 +94,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 										 hatch=pattern_dict['activation loop'])}
 	used_hatch=[hatches[hatch] for hatch in set(pattern_label_list)]
 	used_hatch_label=list(set(pattern_label_list))
-	legend2=ax.legend(used_hatch,used_hatch_label,loc='upper center',fontsize=8,
+	legend2=ax.legend(used_hatch,used_hatch_label,loc='upper center',fontsize=14,
 					  title="Kinase domain location")
 	ax.add_artist(legend1)
 	ax.add_artist(legend2)

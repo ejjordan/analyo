@@ -19,7 +19,7 @@ residue_codes = {'ARG':'R','HIS':'H','LYS':'K','ASP':'D','GLU':'E',
 residue_codes_reverse = dict([(j,i) for i,j in residue_codes.items()])
 label_dict={True:'activating', False:'non-activating', 'I':'mildly activating',
 			'maybe':'unknown', 'wt':'wild type'}
-color_dict={True:'r', False:'g', 'I':'m', 'maybe':'b', 'wt':'k'}
+color_dict={True:'r', False:'g', 'I':'#e6ccff', 'maybe':'b', 'wt':'k'}
 pattern_dict = {'nucleotide binding loop':'///', '$\\alpha$C helix':'...',
 				'catalytic loop':'xxx', 'activation loop':'\\\\'}
 #ipython notebooks are executed from calcs but make calls are a level up

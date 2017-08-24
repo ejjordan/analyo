@@ -18,7 +18,7 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-    figsize=(12,8))
+    figsize=(14,8))
 
     sasas=data
     if not sort_keys: sort_keys=data.keys()
@@ -44,7 +44,7 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
         counter+=1
 
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels(mutations,rotation='vertical',ha='center')
+    ax.set_xticklabels(mutations,rotation='vertical',ha='center',size='xx-large')
     ymin,ymax=ax.get_ylim()
     plot_size=ymax-ymin;buf_size=0.005*plot_size
     xtick_lines=[[[xval,xval],[ymin+buf_size,ymax-buf_size]] for xval,ymax in zip(
@@ -64,8 +64,8 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
     used_patch=[patches[label] for label in set(labels)]
     used_label=[label_dict[label] for label in set(labels)]
     if title!=None:
-        plt.title(title,size='x-large')
-    ax.legend(used_patch,used_label)
+        plt.title(title,size='xx-large')
+    ax.legend(used_patch,used_label,fontsize=14)
     ax.set_ylabel('SASA (\AA$^2$)')
     if plot:
         fig.show()
