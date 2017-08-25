@@ -44,6 +44,9 @@ def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
         counter+=1
 
     ax.set_xticks(x_ticks)
+    for ii,mut in enumerate(mutations):
+        if mut=='ACTIVE WT':mutations[ii]='ACTIVE'
+        if mut=='INACTIVE WT':mutations[ii]='INACTIVE'
     ax.set_xticklabels(mutations,rotation='vertical',ha='center',size='xx-large')
     ymin,ymax=ax.get_ylim()
     plot_size=ymax-ymin;buf_size=0.005*plot_size

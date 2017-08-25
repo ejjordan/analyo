@@ -27,15 +27,15 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 	pattern_list=[];pattern_label_list=[]
 	for mut_name in mutations:
 		match=re.match('[A-Z](\d{3,4})[A-Z]',mut_name)
+		pattern_match=False
 		if match:
-			mut_idx=int(match.groups()[0])
-			pattern_match=False
+			mut_idx=int(match.groups()[0])				
 			for domain in pattern_dict:
 				if mut_idx in domains[domain]:
 					pattern_list.append(pattern_dict[domain])
 					pattern_label_list.append(domain)
 					pattern_match=True
-			if not pattern_match: pattern_list.append(' ')
+		if not pattern_match: pattern_list.append(' ')
 	
 	fig, ax = plt.subplots(figsize=(14,8))
 	x_ticks = np.arange(len(labels))
@@ -55,6 +55,9 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 			bar.set_hatch(pattern)
 		lower_yvals=[min(0,yval) for yval in neg_avgs]
 	ax.set_xticks(x_ticks)
+	for ii,mut in enumerate(mutations):
+		if mut=='ACTIVE WT':mutations[ii]='ACTIVE'
+		if mut=='INACTIVE WT':mutations[ii]='INACTIVE'
 	ax.set_xticklabels(mutations, rotation='vertical', ha='center',size='xx-large')
 	ymin,ymax=ax.get_ylim()
 	plot_size=ymax-ymin;buf_size=0.005*plot_size
@@ -94,7 +97,7 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 										 hatch=pattern_dict['activation loop'])}
 	used_hatch=[hatches[hatch] for hatch in set(pattern_label_list)]
 	used_hatch_label=list(set(pattern_label_list))
-	legend2=ax.legend(used_hatch,used_hatch_label,loc='upper center',fontsize=14,
+	legend2=ax.legend(used_hatch,used_hatch_label,loc='right',fontsize=14,
 					  title="Kinase domain location")
 	ax.add_artist(legend1)
 	ax.add_artist(legend2)
