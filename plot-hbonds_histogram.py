@@ -36,8 +36,8 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 					pattern_label_list.append(domain)
 					pattern_match=True
 		if not pattern_match: pattern_list.append(' ')
-	
-	fig, ax = plt.subplots(figsize=(14,8))
+	xaxis_size=max(len(mutations)/3.,8) #scale x axis width by number of mutations
+	fig, ax = plt.subplots(figsize=(xaxis_size,8))
 	x_ticks = np.arange(len(labels))
 	width=0.75
 	color_list=[color_dict[i] for i in labels]

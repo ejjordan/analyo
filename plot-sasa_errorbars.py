@@ -15,19 +15,21 @@ data,calc = plotload(plotname,work)
 
 def error_SASA(data,sort_keys=None,plot=True,meta=None,title=None,
 			   max_inactive=2, min_active=4):
+
+	#get the data ready
+    sasas=data
+    if not sort_keys: sort_keys=data.keys()
+    labels=label_maker(data,name_list=sort_keys,max_inactive=max_inactive, min_active=min_active)
+    mutations=[sasas[sn]['name'].upper() for sn in sort_keys]
+
+    xaxis_size=max(len(mutations)/3.,8) #scale x axis width by number of mutations
     #---prepare an axis
     axes,fig = panelplot(
         layout={'out':{'grid':[1,1]},'ins':[{'grid':[1,1]}]},
-    figsize=(14,8))
-
-    sasas=data
-    if not sort_keys: sort_keys=data.keys()
+    figsize=(xaxis_size,8))
 
     #---PLOT
     counter,x_ticks,lower_yvals = 0,[],[]
-    labels=label_maker(data,name_list=sort_keys,max_inactive=max_inactive, min_active=min_active)
-    mutations=[sasas[sn]['name'].upper() for sn in sort_keys]
-    #pattern_list,pattern_label_list=get_hatches(mutations,domains)
     for snum,sn in enumerate(sort_keys):
         mean=sasas[sn]['mean']
         std=sasas[sn]['std']
