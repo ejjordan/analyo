@@ -14,7 +14,7 @@ plotname = 'hbonds_histogram'
 data,calc = plotload(plotname,work)
 
 def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
-				meta=None,zero=False, max_inactive=2, min_active=4,
+				meta=None,zero=False, max_inactive=2, min_active=4, do_confuse=True,
 				ylabel='H-bonds occupancy difference'):
 	sorted_names=keys
 	avgs=np.array([deltas[name]['delta'] for name in sorted_names])
@@ -43,6 +43,9 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 	color_list=[color_dict[i] for i in labels]
 	label_list=[label_dict[i] for i in labels]
 	lower_yvals=[min(0,yval) for yval in avgs]
+	if do_confuse:
+		confuse(avgs,color_list)
+		return
 	bars = ax.bar(x_ticks, avgs, width, color=color_list, zorder=2)
 	for bar,pattern in zip(bars,pattern_list):
 		bar.set_hatch(pattern)
@@ -107,6 +110,46 @@ def histofusion(deltas,keys,mode='values',title=None, plot=True, y_limits=False,
 		picturesave('fig.%s'%(plotname),directory=work.plotdir,backup=False,
 					version=True,meta=meta)
 
+def confuse(avgs,color_list):
+	act_nonzero=0;intermed_nonzero=0;nonact_nonzero=0
+	act_zero=0;intermed_zero=0;nonact_zero=0
+	for barval,color in zip(avgs,color_list):
+		if color=='g':
+			if abs(barval)>0: nonact_nonzero+=1
+			else: nonact_zero+=1
+		elif color=='r':
+			if abs(barval)>0: act_nonzero+=1
+			else: act_zero+=1
+		elif color=='k':
+			continue
+		else:
+			if abs(barval)>0: intermed_nonzero+=1
+			else: intermed_zero+=1
+	tp_high=act_nonzero;tp_low=act_nonzero+intermed_nonzero
+	fp_high=nonact_nonzero+intermed_nonzero;fp_low=nonact_nonzero
+	tn_high=nonact_zero+intermed_zero;tn_low=nonact_zero
+	fn_high=act_zero;fn_low=act_zero+intermed_zero
+	if (tp_high+fn_high)==0 or (tn_high+fp_high)==0:
+		print 'HIGH:\t no stats'
+	else:
+		tpr_high=float(tp_high)/(tp_high+fn_high)
+		tnr_high=float(tn_high)/(tn_high+fp_high)
+		bacc_high=(tpr_high+tnr_high)/2
+		if bacc_high>0.5:
+			print "HIGH:\ttp %d\tfp %d\ttn %d\tfn %d"%(tp_high,fp_high,tn_high,fn_high)
+			print "HIGH:\tbalanced accuracy %0.4f\tsensitivity %0.4f\tspecificity %0.4f"%(bacc_high,tpr_high,tnr_high)
+	if (tp_low+fn_low)==0 or (tn_low+fp_low)==0:
+		print 'LOW:\t no stats'
+	else:
+		tpr_low=float(tp_low)/(tp_low+fn_low) #tpr=sensitivity
+		tnr_low=float(tn_low)/(tn_low+fp_low) #tnr=specificity
+		bacc_low=(tpr_low+tnr_low)/2 #balanced accuracy
+		if bacc_low>0.5:
+			print "LOW:\ttp %d\tfp %d\ttn %d\tfn %d"%(tp_low,fp_low,tn_low,fn_low)
+			print "LOW:\tbalanced accuracy %0.4f\tsensitivity %0.4f\tspecificity %0.4f"%(bacc_low,tpr_low,tnr_low)
+	return
+
+
 
 #finalize the data and call the plotter
 protein=work.meta['protein_name']
@@ -131,7 +174,7 @@ for domain_name,domain_residxs in domains.items():
 	bond_list=list(set(bond_list))
 	title=u'inactive kcat $<=$ {0}x, active kcat $>=$ {1}x, Threshold = {2:1.3f}\nResidues: {3}'.format(max_inactive,min_active,threshold,domain_name)
 	print title
-	histofusion(deltas, keys, title=title, zero=True, plot=False,
+	histofusion(deltas, keys, title=title, zero=True, plot=False,do_confuse=True,
 				max_inactive=max_inactive, min_active=min_active,
 				meta={'occupancy_diff threshold':threshold, 'domain name':domain_name,
 					  'donor_residues':domain_residxs, 'acceptor_residues':domain_residxs,
