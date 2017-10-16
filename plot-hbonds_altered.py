@@ -63,14 +63,16 @@ def chunk_hbonds(work,unpacked_hbonds,hbond_keys,num_chunks=10,bond_list=None,
 	return chunk_hbonds
 
 
-def thresh_plotter(thresh,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None,residue_to_highlight=None):
-	xtick_labels=[];xtick_labels_sns=[];label_colors=[];label_marks=[];values=[]
+def thresh_plotter(thresh,deltas=False,chunks=10,plot=True,title=None,meta=None,plot_threshold=None,residue_to_highlight=None,return_hbonds=False):
+	xtick_labels=[];xtick_labels_sns=[];label_colors=[];label_marks=[];values=[];pairs={}
 	for sn in thresh:
 		for bond in thresh[sn]:
 			if bond=='name' or bond=='kcat': continue
 			for chunk in range(chunks):
 				chunk+=1
 				if bond in thresh[sn] and chunk in thresh[sn][bond]['times'] and abs(thresh[sn][bond]['deltas'][chunk])>plot_threshold:
+					if bond in pairs: pairs[bond]+=1
+					else: pairs[bond]=1
 					values.append(thresh[sn][bond]['deltas'][chunk])
 					xtick_labels_sns.append(sn)
 					mark='black'
@@ -81,6 +83,7 @@ def thresh_plotter(thresh,deltas=False,chunks=10,plot=True,title=None,meta=None,
 					xtick_labels.append(' '.join(sn.split('_'))+', '+bond)
 					label_marks.append(mark)
 
+	if return_hbonds: return pairs
 	labels=label_maker(data=thresh, name_list=xtick_labels_sns,
 					   max_inactive=max_inactive, min_active=min_active)
 	fig, ax = plt.subplots(figsize=(45,20))
@@ -150,8 +153,25 @@ bond_list=list(set(bond_list))
 chunks=chunk_hbonds(work,hbts,sort_keys,bond_list=bond_list,divy=True,num_chunks=2,deltas=True)
 title='$>${0} $\%$ occupancy change H-bonds'.format(plot_thresh*100)
 
-thresh_plotter(chunks,chunks=2,deltas=True,residue_to_highlight=hili_res,title=title,
-			   plot=False,plot_threshold=plot_thresh,
-			   meta={'plot threshold':plot_thresh,'bond_list':bond_list,
-					 'altered theshold':altered_thresh,'highlighted_residue':hili_res,
-					 'only show delta hbonds':altered})
+return_hbonds=True
+
+pairs=thresh_plotter(chunks,chunks=2,deltas=True,residue_to_highlight=hili_res,title=title,
+					 plot=False,plot_threshold=plot_thresh,return_hbonds=return_hbonds,
+					 meta={'plot threshold':plot_thresh,'bond_list':bond_list,
+						   'altered theshold':altered_thresh,'highlighted_residue':hili_res,
+						   'only show delta hbonds':altered})
+
+if return_hbonds:
+	donors={};acceptors={};num_labile=0
+	pairsort=sorted(pairs, key=lambda k: pairs[k],reverse=True)
+	for bond in pairsort:
+		print "%s\t%s"%(bond,pairs[bond])
+		num_labile+=pairs[bond]
+		donor=bond[:13];acceptor=bond[14:]
+		if donor in donors:	
+			donors[donor]+=1
+		else: donors[donor]=1
+		if acceptor in acceptors: 
+			acceptors[acceptor]+=1
+		else: acceptors[acceptor]=1
+	print num_labile
