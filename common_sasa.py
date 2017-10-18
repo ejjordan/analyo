@@ -86,7 +86,7 @@ def combine_replicates(unpacked_SASAs):
     return combined_SASAs
 
 
-def sasa_stats(SASAs):
+def sasa_stats(SASAs,order='mean'):
     SASA_stats={}
     for sn,info in SASAs.items():
         SASA_stats[sn]={'name':' '.join(info['name'].split('_')), 'kcat':info['kcat']}
@@ -97,9 +97,12 @@ def sasa_stats(SASAs):
         SASA_stats[sn]['mean']=np.sum(SASA_stats[sn]['means'])
         SASA_stats[sn]['std']=np.sum(SASA_stats[sn]['stds'])
     means=[[k,v['mean']] for k,v in SASA_stats.items()]
+    stds=[[k,v['std']] for k,v in SASA_stats.items()]
     max_=max([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
     min_=min([SASA_stats[key]['mean'] for key in SASA_stats.keys()])
     SASA_stats['max_sasa']=max_
     SASA_stats['min_sasa']=min_
-    sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
+    if order=='mean': sorted_keys=[i[0] for i in sorted(means,key=lambda x: x[1],reverse=True)]
+    elif order=='std': sorted_keys=[i[0] for i in sorted(stds,key=lambda x: x[1],reverse=True)]
+    else: raise Exception('you must supply a desired ordering from ["mean", "std"]')
     return SASA_stats,sorted_keys
